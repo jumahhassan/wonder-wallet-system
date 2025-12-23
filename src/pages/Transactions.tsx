@@ -21,9 +21,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Download, ArrowLeftRight, Flag, RotateCcw } from 'lucide-react';
-import { Transaction, Profile, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, TRANSACTION_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '@/types/database';
+import { TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, APPROVAL_STATUS_LABELS, ApprovalStatus, TransactionType, CurrencyCode } from '@/types/database';
 
-interface TransactionWithAgent extends Transaction {
+interface TransactionData {
+  id: string;
+  agent_id: string | null;
+  transaction_type: TransactionType;
+  amount: number;
+  currency: CurrencyCode;
+  recipient_phone: string | null;
+  recipient_name: string | null;
+  approval_status: ApprovalStatus;
+  approved_by: string | null;
+  created_at: string;
+}
+
+interface TransactionWithAgent extends TransactionData {
   agent_name?: string;
   agent_email?: string;
 }

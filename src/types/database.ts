@@ -114,3 +114,17 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   sales_assistant: 'Sales Assistant',
   sales_agent: 'Sales Agent',
 };
+
+export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
+
+export const TRANSACTION_STATUS_LABELS: Record<TransactionStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  completed: 'Completed',
+  failed: 'Failed',
+};
