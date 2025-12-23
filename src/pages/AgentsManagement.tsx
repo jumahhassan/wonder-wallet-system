@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -13,10 +15,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Search, Users, Clock, Wallet, TrendingUp } from 'lucide-react';
+import { Search, Users, Clock, Wallet, TrendingUp, Plus } from 'lucide-react';
 import { CURRENCY_SYMBOLS, CurrencyCode } from '@/types/database';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Agent {
   id: string;
@@ -30,9 +48,18 @@ interface Agent {
 }
 
 export default function AgentsManagement() {
+  const { user } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Float allocation state
+  const [allocateDialogOpen, setAllocateDialogOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [allocateAmount, setAllocateAmount] = useState('');
+  const [allocateCurrency, setAllocateCurrency] = useState<CurrencyCode>('USD');
+  const [allocateNotes, setAllocateNotes] = useState('');
+  const [allocating, setAllocating] = useState(false);
 
   useEffect(() => {
     fetchAgents();
@@ -119,6 +146,68 @@ export default function AgentsManagement() {
       prev.map(a => a.id === agentId ? { ...a, is_active: !currentStatus } : a)
     );
     toast.success(`Agent ${currentStatus ? 'disabled' : 'enabled'}`);
+  };
+
+  const openAllocateDialog = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setAllocateAmount('');
+    setAllocateCurrency('USD');
+    setAllocateNotes('');
+    setAllocateDialogOpen(true);
+  };
+
+  const handleAllocateFloat = async () => {
+    if (!selectedAgent || !user) return;
+    
+    const amount = parseFloat(allocateAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    setAllocating(true);
+    try {
+      // Insert float allocation record
+      const { error: allocationError } = await supabase
+        .from('float_allocations')
+        .insert({
+          agent_id: selectedAgent.id,
+          amount,
+          currency: allocateCurrency,
+          allocated_by: user.id,
+          notes: allocateNotes || null,
+        });
+
+      if (allocationError) throw allocationError;
+
+      // Update agent's wallet balance
+      const { data: wallet, error: walletFetchError } = await supabase
+        .from('wallets')
+        .select('id, balance')
+        .eq('user_id', selectedAgent.id)
+        .eq('currency', allocateCurrency)
+        .maybeSingle();
+
+      if (walletFetchError) throw walletFetchError;
+
+      if (wallet) {
+        const { error: walletUpdateError } = await supabase
+          .from('wallets')
+          .update({ balance: wallet.balance + amount })
+          .eq('id', wallet.id);
+
+        if (walletUpdateError) throw walletUpdateError;
+      }
+
+      toast.success(`Successfully allocated ${CURRENCY_SYMBOLS[allocateCurrency]}${amount.toLocaleString()} to ${selectedAgent.full_name || selectedAgent.email}`);
+      setAllocateDialogOpen(false);
+      fetchAgents(); // Refresh the list
+    } catch (error) {
+      console.error('Error allocating float:', error);
+      toast.error('Failed to allocate float');
+    } finally {
+      setAllocating(false);
+    }
   };
 
   const filteredAgents = agents.filter(a =>
@@ -262,7 +351,12 @@ export default function AgentsManagement() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openAllocateDialog(agent)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
                         Allocate Float
                       </Button>
                     </TableCell>
@@ -273,6 +367,84 @@ export default function AgentsManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Allocate Float Dialog */}
+      <Dialog open={allocateDialogOpen} onOpenChange={setAllocateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Allocate Float</DialogTitle>
+            <DialogDescription>
+              Allocate float to {selectedAgent?.full_name || selectedAgent?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={allocateAmount}
+                  onChange={(e) => setAllocateAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select 
+                  value={allocateCurrency} 
+                  onValueChange={(v) => setAllocateCurrency(v as CurrencyCode)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="SSP">SSP (£)</SelectItem>
+                    <SelectItem value="KES">KES (KSh)</SelectItem>
+                    <SelectItem value="UGX">UGX (USh)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Add any notes about this allocation..."
+                value={allocateNotes}
+                onChange={(e) => setAllocateNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            {selectedAgent && (
+              <div className="bg-muted rounded-lg p-3 text-sm">
+                <p className="text-muted-foreground">Current USD Balance</p>
+                <p className="font-semibold text-lg">
+                  ${selectedAgent.float_balance.toLocaleString()}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setAllocateDialogOpen(false)}
+              disabled={allocating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAllocateFloat}
+              disabled={allocating || !allocateAmount}
+            >
+              {allocating ? 'Allocating...' : 'Allocate Float'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
