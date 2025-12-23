@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -19,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import ReceiptDialog from '@/components/ReceiptDialog';
 import { format } from 'date-fns';
-import { Search, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Search, Clock, CheckCircle, XCircle, AlertCircle, Printer } from 'lucide-react';
 import { 
   TRANSACTION_TYPE_LABELS, 
   CURRENCY_SYMBOLS, 
@@ -40,6 +42,7 @@ interface MyTransaction {
   approval_status: ApprovalStatus;
   created_at: string;
   rejection_reason: string | null;
+  commission_amount: number | null;
 }
 
 const statusIcons: Record<ApprovalStatus, React.ReactNode> = {
@@ -60,6 +63,8 @@ export default function MyTransactions() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | 'all'>('all');
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<MyTransaction | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -89,7 +94,7 @@ export default function MyTransactions() {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select('id, transaction_type, amount, currency, recipient_phone, recipient_name, approval_status, created_at, rejection_reason')
+        .select('id, transaction_type, amount, currency, recipient_phone, recipient_name, approval_status, created_at, rejection_reason, commission_amount')
         .eq('agent_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -100,6 +105,30 @@ export default function MyTransactions() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openReceipt = (transaction: MyTransaction) => {
+    setSelectedTransaction(transaction);
+    setReceiptOpen(true);
+  };
+
+  const getReceiptData = () => {
+    if (!selectedTransaction || !user) return null;
+    
+    return {
+      transactionId: `WML-${selectedTransaction.id.slice(0, 6).toUpperCase()}`,
+      serviceType: selectedTransaction.transaction_type,
+      clientName: selectedTransaction.recipient_name || 'Unknown',
+      clientPhone: selectedTransaction.recipient_phone || '',
+      amount: selectedTransaction.amount,
+      fee: selectedTransaction.commission_amount || 0,
+      currency: selectedTransaction.currency,
+      agentName: user.email?.split('@')[0] || 'Agent',
+      date: new Date(selectedTransaction.created_at),
+      status: selectedTransaction.approval_status === 'approved' ? 'SUCCESS' as const : 
+              selectedTransaction.approval_status === 'pending' ? 'PENDING' as const : 'FAILED' as const,
+      location: 'Juba, South Sudan',
+    };
   };
 
   const filteredTransactions = transactions.filter(t => {
@@ -233,6 +262,7 @@ export default function MyTransactions() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -269,6 +299,16 @@ export default function MyTransactions() {
                     <TableCell className="text-muted-foreground">
                       {format(new Date(transaction.created_at), 'MMM d, yyyy HH:mm')}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openReceipt(transaction)}
+                        disabled={transaction.approval_status !== 'approved'}
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -276,6 +316,12 @@ export default function MyTransactions() {
           )}
         </CardContent>
       </Card>
+
+      <ReceiptDialog
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        data={getReceiptData()}
+      />
     </div>
   );
 }
