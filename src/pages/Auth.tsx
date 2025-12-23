@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, Shield, Wallet } from 'lucide-react';
+import { Loader2, Shield, Wallet } from 'lucide-react';
+import wondersLogo from '@/assets/wonders-logo.jpg';
 import { z } from 'zod';
 
 const authSchema = z.object({
@@ -104,15 +105,7 @@ export default function Auth() {
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 gradient-sidebar flex-col justify-between p-12">
         <div>
-          <div className="flex items-center gap-3 text-sidebar-foreground">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-display font-bold">Wonders M Ltd</h1>
-              <p className="text-sm text-sidebar-foreground/70">Financial Services</p>
-            </div>
-          </div>
+          <img src={wondersLogo} alt="Wonders M Ltd" className="h-14 w-auto rounded-lg" />
         </div>
         
         <div className="space-y-8">
@@ -148,11 +141,8 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <Card className="w-full max-w-md shadow-xl border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-display font-bold">Wonders M Ltd</span>
+            <div className="lg:hidden flex items-center justify-center mb-4">
+              <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto" />
             </div>
             <CardTitle className="text-2xl font-display">Welcome</CardTitle>
             <CardDescription>Sign in to access your dashboard</CardDescription>

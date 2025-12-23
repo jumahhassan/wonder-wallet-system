@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -12,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Building2,
   LayoutDashboard,
   Smartphone,
   Wallet,
@@ -27,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
+import wondersLogo from '@/assets/wonders-logo.jpg';
 
 interface NavItem {
   label: string;
@@ -73,14 +72,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 gradient-sidebar border-r border-sidebar-border">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex items-center gap-3 p-6 border-b border-sidebar-border">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-sidebar-foreground">Wonders M</h1>
-              <p className="text-xs text-sidebar-foreground/60">Financial Services</p>
-            </div>
+          <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
+            <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto rounded" />
           </div>
 
           {/* Navigation */}
