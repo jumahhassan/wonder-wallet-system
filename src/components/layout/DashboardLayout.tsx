@@ -36,14 +36,23 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
-  { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
-  { label: 'Airtime', href: '/airtime', icon: <Smartphone className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
-  { label: 'Mobile Money', href: '/mobile-money', icon: <Wallet className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
-  { label: 'Cross-Border', href: '/cross-border', icon: <Globe className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
-  { label: 'Approvals', href: '/approvals', icon: <CheckSquare className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant'] },
-  { label: 'Agents', href: '/agents', icon: <Users className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant'] },
+  // Super Agent menu
+  { label: 'Users Management', href: '/users', icon: <Users className="w-5 h-5" />, roles: ['super_agent'] },
+  { label: 'Wallets & Funds', href: '/wallets', icon: <Wallet className="w-5 h-5" />, roles: ['super_agent'] },
+  { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['super_agent'] },
+  { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Audit Logs', href: '/audit-logs', icon: <FileText className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Settings', href: '/settings', icon: <Settings className="w-5 h-5" />, roles: ['super_agent'] },
+  // Sales Assistant menu
+  { label: 'Sales Requests', href: '/sales-requests', icon: <CheckSquare className="w-5 h-5" />, roles: ['sales_assistant'] },
+  { label: 'Agents', href: '/agents', icon: <Users className="w-5 h-5" />, roles: ['sales_assistant'] },
+  { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_assistant'] },
+  { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['sales_assistant'] },
+  // Sales Agent menu
+  { label: 'New Sale', href: '/new-sale', icon: <Smartphone className="w-5 h-5" />, roles: ['sales_agent'] },
+  { label: 'My Transactions', href: '/my-transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_agent'] },
+  { label: 'My Commission', href: '/my-commission', icon: <Wallet className="w-5 h-5" />, roles: ['sales_agent'] },
+  { label: 'My Clients', href: '/my-clients', icon: <Users className="w-5 h-5" />, roles: ['sales_agent'] },
 ];
 
 interface DashboardLayoutProps {
