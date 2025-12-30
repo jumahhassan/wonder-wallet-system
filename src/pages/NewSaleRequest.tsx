@@ -112,21 +112,21 @@ export default function NewSaleRequest() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">New Sale Request</h1>
-        <p className="text-muted-foreground">Submit a new transaction request for approval</p>
+        <h1 className="text-2xl md:text-3xl font-bold">New Sale Request</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Submit a new transaction request for approval</p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Transaction Details</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-lg md:text-xl">Transaction Details</CardTitle>
+          <CardDescription className="text-sm">
             Fill in the client and transaction information below
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Service Type */}
             <div className="space-y-2">
               <Label htmlFor="serviceType">Service Type *</Label>
@@ -151,7 +151,7 @@ export default function NewSaleRequest() {
             </div>
 
             {/* Client Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="clientName">Client Name</Label>
                 <Input
@@ -174,7 +174,7 @@ export default function NewSaleRequest() {
             </div>
 
             {/* Amount */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
                 <Input
@@ -234,18 +234,18 @@ export default function NewSaleRequest() {
             </div>
 
             {/* Submit */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1"
+                className="flex-1 order-2 sm:order-1"
                 onClick={() => navigate('/dashboard')}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="flex-1"
+                className="flex-1 order-1 sm:order-2"
                 disabled={loading}
               >
                 {loading ? (

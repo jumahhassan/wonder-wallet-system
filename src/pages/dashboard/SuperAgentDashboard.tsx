@@ -151,23 +151,23 @@ export default function SuperAgentDashboard() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Company-wide overview and analytics</p>
+        <h1 className="text-2xl md:text-3xl font-display font-bold">Admin Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Company-wide overview and analytics</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">{stat.title}</p>
-                  <p className="text-xl font-bold mt-1">{stat.value}</p>
+            <CardContent className="p-3 md:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-lg md:text-xl font-bold mt-1 truncate">{stat.value}</p>
                 </div>
-                <div className={`p-2 rounded-full ${stat.bg} ${stat.color}`}>{stat.icon}</div>
+                <div className={`p-2 rounded-full ${stat.bg} ${stat.color} self-start sm:self-auto shrink-0`}>{stat.icon}</div>
               </div>
             </CardContent>
           </Card>

@@ -100,29 +100,29 @@ export default function SalesAssistantDashboard() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold">Operations Dashboard</h1>
-          <p className="text-muted-foreground">Manage sales requests and agent operations</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold">Operations Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage sales requests and agent operations</p>
         </div>
-        <Button onClick={() => navigate('/sales-requests')} className="gap-2">
+        <Button onClick={() => navigate('/sales-requests')} className="gap-2 w-full sm:w-auto">
           <Eye className="w-4 h-4" />
           View All Requests
         </Button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => i === 0 && navigate('/sales-requests')}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-lg md:text-2xl font-bold mt-1 truncate">{stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-full ${stat.bg} ${stat.color}`}>{stat.icon}</div>
+                <div className={`p-2 md:p-3 rounded-full ${stat.bg} ${stat.color} self-start sm:self-auto shrink-0`}>{stat.icon}</div>
               </div>
             </CardContent>
           </Card>
