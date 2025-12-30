@@ -4,7 +4,7 @@ project_id = "bbgiewksmokzecqtwhlt"
 verify_jwt = false
 
 [functions.send-welcome-email]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-transaction-email]
 verify_jwt = true
