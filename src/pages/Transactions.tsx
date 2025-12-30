@@ -20,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Download, ArrowLeftRight, Flag, RotateCcw } from 'lucide-react';
+import { Search, Download, ArrowLeftRight, Flag, RotateCcw, Printer } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, APPROVAL_STATUS_LABELS, ApprovalStatus, TransactionType, CurrencyCode } from '@/types/database';
+import ReceiptDialog from '@/components/ReceiptDialog';
 
 interface TransactionData {
   id: string;
@@ -48,6 +49,31 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithAgent | null>(null);
+
+  const openReceipt = (tx: TransactionWithAgent) => {
+    setSelectedTransaction(tx);
+    setReceiptOpen(true);
+  };
+
+  const getReceiptData = () => {
+    if (!selectedTransaction) return null;
+    return {
+      transactionId: `WML-${selectedTransaction.id.slice(0, 6).toUpperCase()}`,
+      serviceType: selectedTransaction.transaction_type,
+      clientName: selectedTransaction.recipient_name || 'N/A',
+      clientPhone: selectedTransaction.recipient_phone || 'N/A',
+      amount: Number(selectedTransaction.amount),
+      fee: Math.round(Number(selectedTransaction.amount) * 0.02),
+      currency: selectedTransaction.currency,
+      agentName: selectedTransaction.agent_name || selectedTransaction.agent_email || 'N/A',
+      date: new Date(selectedTransaction.created_at),
+      status: selectedTransaction.approval_status === 'approved' ? 'SUCCESS' as const : 
+              selectedTransaction.approval_status === 'pending' ? 'PENDING' as const : 'FAILED' as const,
+      location: 'Juba, South Sudan',
+    };
+  };
 
   useEffect(() => {
     fetchTransactions();
@@ -211,7 +237,7 @@ export default function Transactions() {
                     <TableHead>Status</TableHead>
                     <TableHead>Approved By</TableHead>
                     <TableHead>Date</TableHead>
-                    {role === 'super_agent' && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -244,18 +270,29 @@ export default function Transactions() {
                       <TableCell className="text-muted-foreground">
                         {new Date(tx.created_at).toLocaleDateString()}
                       </TableCell>
-                      {role === 'super_agent' && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" title="Reverse">
-                              <RotateCcw className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" title="Flag">
-                              <Flag className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            title="Print Receipt"
+                            onClick={() => openReceipt(tx)}
+                            disabled={tx.approval_status !== 'approved'}
+                          >
+                            <Printer className="w-4 h-4" />
+                          </Button>
+                          {role === 'super_agent' && (
+                            <>
+                              <Button variant="ghost" size="sm" title="Reverse">
+                                <RotateCcw className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" title="Flag">
+                                <Flag className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -264,6 +301,12 @@ export default function Transactions() {
           )}
         </CardContent>
       </Card>
+
+      <ReceiptDialog 
+        open={receiptOpen} 
+        onOpenChange={setReceiptOpen} 
+        data={getReceiptData()} 
+      />
     </div>
   );
 }
