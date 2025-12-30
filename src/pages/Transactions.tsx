@@ -43,6 +43,7 @@ interface TransactionData {
 interface TransactionWithAgent extends TransactionData {
   agent_name?: string;
   agent_email?: string;
+  approved_by_name?: string;
 }
 
 export default function Transactions() {
@@ -104,10 +105,12 @@ export default function Transactions() {
     if (txData && profiles) {
       const txWithAgents: TransactionWithAgent[] = txData.map(tx => {
         const agent = profiles.find(p => p.id === tx.agent_id);
+        const approver = profiles.find(p => p.id === tx.approved_by);
         return {
           ...tx,
           agent_name: agent?.full_name || undefined,
-          agent_email: agent?.email
+          agent_email: agent?.email,
+          approved_by_name: approver?.full_name || approver?.email || undefined
         };
       });
       setTransactions(txWithAgents);
@@ -272,7 +275,7 @@ export default function Transactions() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {tx.approved_by ? tx.approved_by.slice(0, 8) + '...' : '-'}
+                            {tx.approved_by_name || '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {new Date(tx.created_at).toLocaleDateString()}
