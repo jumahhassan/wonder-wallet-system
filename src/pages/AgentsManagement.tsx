@@ -168,38 +168,29 @@ export default function AgentsManagement() {
       return;
     }
 
+    if (amount > 1000000) {
+      toast.error('Amount cannot exceed 1,000,000');
+      return;
+    }
+
     setAllocating(true);
     try {
-      // Insert float allocation record
-      const { error: allocationError } = await supabase
-        .from('float_allocations')
-        .insert({
+      // Use validated edge function for server-side validation
+      const { data, error } = await supabase.functions.invoke('validate-float-allocation', {
+        body: {
           agent_id: selectedAgent.id,
-          amount,
+          amount: amount,
           currency: allocateCurrency,
-          allocated_by: user.id,
-          notes: allocateNotes || null,
-        });
+          notes: allocateNotes || undefined,
+        },
+      });
 
-      if (allocationError) throw allocationError;
+      if (error) throw error;
 
-      // Update agent's wallet balance
-      const { data: wallet, error: walletFetchError } = await supabase
-        .from('wallets')
-        .select('id, balance')
-        .eq('user_id', selectedAgent.id)
-        .eq('currency', allocateCurrency)
-        .maybeSingle();
-
-      if (walletFetchError) throw walletFetchError;
-
-      if (wallet) {
-        const { error: walletUpdateError } = await supabase
-          .from('wallets')
-          .update({ balance: wallet.balance + amount })
-          .eq('id', wallet.id);
-
-        if (walletUpdateError) throw walletUpdateError;
+      if (!data.success) {
+        const errorMessage = data.errors?.join(', ') || 'Validation failed';
+        toast.error(errorMessage);
+        return;
       }
 
       toast.success(`Successfully allocated ${CURRENCY_SYMBOLS[allocateCurrency]}${amount.toLocaleString()} to ${selectedAgent.full_name || selectedAgent.email}`);
