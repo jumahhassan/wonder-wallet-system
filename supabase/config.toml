@@ -2,3 +2,12 @@ project_id = "bbgiewksmokzecqtwhlt"
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = true
+
+[functions.send-transaction-email]
+verify_jwt = true
+
+[functions.send-password-reset-email]
+verify_jwt = false
