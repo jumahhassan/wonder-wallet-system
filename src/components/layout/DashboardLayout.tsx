@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronRight,
   Globe,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: 'Users Management', href: '/users', icon: <Users className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Wallets & Funds', href: '/wallets', icon: <Wallet className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['super_agent'] },
+  { label: 'Escalated Requests', href: '/escalated-requests', icon: <AlertTriangle className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Audit Logs', href: '/audit-logs', icon: <FileText className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Settings', href: '/settings', icon: <Settings className="w-5 h-5" />, roles: ['super_agent'] },

@@ -180,6 +180,9 @@ export type Database = {
           commission_amount: number | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          escalated_at: string | null
+          escalated_by: string | null
+          escalation_reason: string | null
           id: string
           metadata: Json | null
           recipient_name: string | null
@@ -198,6 +201,9 @@ export type Database = {
           commission_amount?: number | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_reason?: string | null
           id?: string
           metadata?: Json | null
           recipient_name?: string | null
@@ -216,6 +222,9 @@ export type Database = {
           commission_amount?: number | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_reason?: string | null
           id?: string
           metadata?: Json | null
           recipient_name?: string | null
@@ -294,7 +303,7 @@ export type Database = {
     }
     Enums: {
       app_role: "super_agent" | "sales_assistant" | "sales_agent"
-      approval_status: "pending" | "approved" | "rejected"
+      approval_status: "pending" | "approved" | "rejected" | "escalated"
       currency_code: "USD" | "SSP" | "KES" | "UGX"
       transaction_status:
         | "pending"
@@ -437,7 +446,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_agent", "sales_assistant", "sales_agent"],
-      approval_status: ["pending", "approved", "rejected"],
+      approval_status: ["pending", "approved", "rejected", "escalated"],
       currency_code: ["USD", "SSP", "KES", "UGX"],
       transaction_status: [
         "pending",

@@ -13,6 +13,7 @@ interface Stats {
   companyBalance: number;
   transactionsToday: number;
   pendingApprovals: number;
+  escalatedRequests: number;
   failedTransactions: number;
   activeSalesAssistants: number;
   activeSalesAgents: number;
@@ -23,11 +24,13 @@ export default function SuperAgentDashboard() {
     companyBalance: 0,
     transactionsToday: 0,
     pendingApprovals: 0,
+    escalatedRequests: 0,
     failedTransactions: 0,
     activeSalesAssistants: 0,
     activeSalesAgents: 0,
   });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [escalatedTransactions, setEscalatedTransactions] = useState<Transaction[]>([]);
   const [dailyData, setDailyData] = useState<{ date: string; volume: number }[]>([]);
   const [revenueByService, setRevenueByService] = useState<{ service: string; revenue: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +71,13 @@ export default function SuperAgentDashboard() {
       .select('*')
       .eq('approval_status', 'pending');
     
+    // Fetch escalated requests
+    const { data: escalatedTx } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('approval_status', 'escalated')
+      .order('created_at', { ascending: false });
+    
     // Fetch failed transactions
     const { data: failedTx } = await supabase
       .from('transactions')
@@ -93,12 +103,14 @@ export default function SuperAgentDashboard() {
       companyBalance,
       transactionsToday: todayTx?.length || 0,
       pendingApprovals: pendingTx?.length || 0,
+      escalatedRequests: escalatedTx?.length || 0,
       failedTransactions: failedTx?.length || 0,
       activeSalesAssistants: salesAssistants,
       activeSalesAgents: salesAgents,
     });
     
     setRecentTransactions((recentTx as Transaction[]) || []);
+    setEscalatedTransactions((escalatedTx as Transaction[]) || []);
     
     // Generate mock daily data for chart
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -128,9 +140,9 @@ export default function SuperAgentDashboard() {
     { title: 'Total Company Balance', value: `$${stats.companyBalance.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
     { title: 'Transactions Today', value: stats.transactionsToday, icon: <TrendingUp className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Pending Approvals', value: stats.pendingApprovals, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
+    { title: 'Escalated Requests', value: stats.escalatedRequests, icon: <AlertTriangle className="w-5 h-5" />, color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { title: 'Failed Transactions', value: stats.failedTransactions, icon: <XCircle className="w-5 h-5" />, color: 'text-destructive', bg: 'bg-destructive/10' },
-    { title: 'Sales Assistants', value: stats.activeSalesAssistants, icon: <UserCheck className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
-    { title: 'Sales Agents', value: stats.activeSalesAgents, icon: <Users className="w-5 h-5" />, color: 'text-accent-foreground', bg: 'bg-accent/10' },
+    { title: 'Sales Staff', value: stats.activeSalesAssistants + stats.activeSalesAgents, icon: <Users className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
   ];
 
   return (
@@ -224,6 +236,44 @@ export default function SuperAgentDashboard() {
         </Card>
       </div>
 
+      {/* Escalated Requests */}
+      {escalatedTransactions.length > 0 && (
+        <Card className="border-orange-500/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Escalated Requests
+              <Badge variant="outline" className="ml-2 border-orange-500 text-orange-500">
+                {escalatedTransactions.length} pending
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {escalatedTransactions.slice(0, 5).map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{TRANSACTION_TYPE_LABELS[tx.transaction_type]}</p>
+                      <p className="text-sm text-muted-foreground">{tx.recipient_name || tx.recipient_phone || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{CURRENCY_SYMBOLS[tx.currency]}{Number(tx.amount).toLocaleString()}</p>
+                    <Badge variant="outline" className="border-orange-500 text-orange-500">
+                      Escalated
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Transactions */}
       <Card>
         <CardHeader>
@@ -251,8 +301,9 @@ export default function SuperAgentDashboard() {
                     <p className="font-semibold">{CURRENCY_SYMBOLS[tx.currency]}{Number(tx.amount).toLocaleString()}</p>
                     <Badge variant={
                       tx.approval_status === 'approved' ? 'default' : 
-                      tx.approval_status === 'pending' ? 'secondary' : 'destructive'
-                    }>
+                      tx.approval_status === 'pending' ? 'secondary' : 
+                      tx.approval_status === 'escalated' ? 'outline' : 'destructive'
+                    } className={tx.approval_status === 'escalated' ? 'border-orange-500 text-orange-500' : ''}>
                       {tx.approval_status}
                     </Badge>
                   </div>

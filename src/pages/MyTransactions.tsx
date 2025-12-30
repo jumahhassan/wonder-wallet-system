@@ -25,7 +25,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import ReceiptDialog from '@/components/ReceiptDialog';
 import TablePagination from '@/components/TablePagination';
 import { format } from 'date-fns';
-import { Search, Clock, CheckCircle, XCircle, AlertCircle, Printer } from 'lucide-react';
+import { Search, Clock, CheckCircle, XCircle, AlertCircle, AlertTriangle, Printer } from 'lucide-react';
 import { 
   TRANSACTION_TYPE_LABELS, 
   CURRENCY_SYMBOLS, 
@@ -52,12 +52,14 @@ const statusIcons: Record<ApprovalStatus, React.ReactNode> = {
   pending: <Clock className="w-4 h-4 text-yellow-500" />,
   approved: <CheckCircle className="w-4 h-4 text-green-500" />,
   rejected: <XCircle className="w-4 h-4 text-red-500" />,
+  escalated: <AlertTriangle className="w-4 h-4 text-orange-500" />,
 };
 
 const statusVariants: Record<ApprovalStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   pending: 'secondary',
   approved: 'default',
   rejected: 'destructive',
+  escalated: 'outline',
 };
 
 export default function MyTransactions() {

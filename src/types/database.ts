@@ -2,7 +2,7 @@ export type AppRole = 'super_agent' | 'sales_assistant' | 'sales_agent';
 export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'failed';
 export type TransactionType = 'airtime' | 'mtn_momo' | 'digicash' | 'm_gurush' | 'mpesa_kenya' | 'uganda_mobile_money';
 export type CurrencyCode = 'USD' | 'SSP' | 'KES' | 'UGX';
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'escalated';
 
 export interface Profile {
   id: string;
@@ -119,6 +119,7 @@ export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {
   pending: 'Pending',
   approved: 'Approved',
   rejected: 'Rejected',
+  escalated: 'Escalated',
 };
 
 export const TRANSACTION_STATUS_LABELS: Record<TransactionStatus, string> = {
