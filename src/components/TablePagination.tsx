@@ -46,34 +46,14 @@ export default function TablePagination({
   if (totalItems === 0) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-t border-border">
-      {/* Left side - Items per page */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>Rows per page:</span>
-        <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => onPageSizeChange(parseInt(value))}
-        >
-          <SelectTrigger className="h-8 w-[70px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {pageSizeOptions.map((size) => (
-              <SelectItem key={size} value={size.toString()}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Center - Page info */}
-      <div className="text-sm text-muted-foreground">
+    <div className="flex flex-col items-center gap-4 py-4 border-t border-border">
+      {/* Top row on mobile: Page info */}
+      <div className="text-sm text-muted-foreground text-center">
         Showing {startIndex} to {endIndex} of {totalItems} entries
       </div>
 
-      {/* Right side - Navigation */}
-      <div className="flex items-center gap-1">
+      {/* Middle row: Navigation buttons */}
+      <div className="flex items-center gap-1 flex-wrap justify-center">
         <Button
           variant="outline"
           size="icon"
@@ -95,11 +75,11 @@ export default function TablePagination({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        {/* Page numbers */}
-        <div className="flex items-center gap-1 mx-2">
+        {/* Page numbers - hidden on very small screens */}
+        <div className="hidden xs:flex items-center gap-1 mx-1 sm:mx-2">
           {generatePageNumbers(currentPage, totalPages).map((page, index) => (
             page === '...' ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+              <span key={`ellipsis-${index}`} className="px-1 sm:px-2 text-muted-foreground">
                 ...
               </span>
             ) : (
@@ -115,6 +95,11 @@ export default function TablePagination({
             )
           ))}
         </div>
+
+        {/* Mobile: Show current page / total */}
+        <span className="xs:hidden px-2 text-sm text-muted-foreground">
+          {currentPage} / {totalPages}
+        </span>
 
         <Button
           variant="outline"
@@ -136,6 +121,26 @@ export default function TablePagination({
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Bottom row: Rows per page selector */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>Rows per page:</span>
+        <Select
+          value={pageSize.toString()}
+          onValueChange={(value) => onPageSizeChange(parseInt(value))}
+        >
+          <SelectTrigger className="h-8 w-[70px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {pageSizeOptions.map((size) => (
+              <SelectItem key={size} value={size.toString()}>
+                {size}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
