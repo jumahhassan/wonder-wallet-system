@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,10 +23,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Search, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, TransactionType, CurrencyCode, ApprovalStatus } from '@/types/database';
+import TablePagination from '@/components/TablePagination';
 
 interface TransactionRequest {
   id: string;
@@ -184,6 +187,8 @@ export default function SalesRequests() {
     r.agent_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const pagination = usePagination(filteredRequests, { initialPageSize: 10 });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -206,9 +211,9 @@ export default function SalesRequests() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Pending Requests</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search requests..."
@@ -227,81 +232,106 @@ export default function SalesRequests() {
               <p className="text-muted-foreground">No pending requests to review</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Request ID</TableHead>
-                  <TableHead>Sales Agent</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRequests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell className="font-mono text-sm">
-                      {request.id.slice(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{request.agent_name || 'Unknown'}</p>
-                        <p className="text-sm text-muted-foreground">{request.agent_email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {TRANSACTION_TYPE_LABELS[request.transaction_type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {CURRENCY_SYMBOLS[request.currency]}{request.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{request.recipient_name || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground">{request.recipient_phone}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(request.created_at), 'MMM d, HH:mm')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(request)}
-                          disabled={processing}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => openRejectDialog(request)}
-                          disabled={processing}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={processing}
-                        >
-                          <AlertTriangle className="w-4 h-4 mr-1" />
-                          Escalate
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[900px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Request ID</TableHead>
+                        <TableHead>Sales Agent</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-mono text-sm">
+                            {request.id.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{request.agent_name || 'Unknown'}</p>
+                              <p className="text-sm text-muted-foreground">{request.agent_email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {TRANSACTION_TYPE_LABELS[request.transaction_type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {CURRENCY_SYMBOLS[request.currency]}{request.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{request.recipient_name || 'N/A'}</p>
+                              <p className="text-sm text-muted-foreground">{request.recipient_phone}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {format(new Date(request.created_at), 'MMM d, HH:mm')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(request)}
+                                disabled={processing}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => openRejectDialog(request)}
+                                disabled={processing}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={processing}
+                              >
+                                <AlertTriangle className="w-4 h-4 mr-1" />
+                                Escalate
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

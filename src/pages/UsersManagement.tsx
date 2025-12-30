@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,10 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Search, Edit, UserX, UserCheck, Key } from 'lucide-react';
+import { Search, Edit } from 'lucide-react';
 import { Profile, AppRole, ROLE_LABELS } from '@/types/database';
+import TablePagination from '@/components/TablePagination';
 
 interface UserWithRole extends Profile {
   role: AppRole;
@@ -94,6 +97,8 @@ export default function UsersManagement() {
     return matchesSearch && matchesRole;
   });
 
+  const pagination = usePagination(filteredUsers, { initialPageSize: 10 });
+
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
       case 'super_agent': return 'default';
@@ -148,77 +153,102 @@ export default function UsersManagement() {
           {loading ? (
             <p className="text-muted-foreground">Loading users...</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.phone || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {ROLE_LABELS[user.role]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Dialog open={dialogOpen && editingUser?.id === user.id} onOpenChange={(open) => {
-                          setDialogOpen(open);
-                          if (open) {
-                            setEditingUser(user);
-                            setEditRole(user.role);
-                          }
-                        }}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit User Role</DialogTitle>
-                              <DialogDescription>
-                                Update the role for {user.full_name || user.email}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Role</Label>
-                                <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
-                                    <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
-                                    <SelectItem value="sales_agent">Sales Agent</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[700px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={getRoleBadgeVariant(user.role)}>
+                              {ROLE_LABELS[user.role]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Dialog open={dialogOpen && editingUser?.id === user.id} onOpenChange={(open) => {
+                                setDialogOpen(open);
+                                if (open) {
+                                  setEditingUser(user);
+                                  setEditRole(user.role);
+                                }
+                              }}>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Edit User Role</DialogTitle>
+                                    <DialogDescription>
+                                      Update the role for {user.full_name || user.email}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label>Role</Label>
+                                      <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                                          <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
+                                          <SelectItem value="sales_agent">Sales Agent</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleUpdateRole}>Save Changes</Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                              <Button onClick={handleUpdateRole}>Save Changes</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

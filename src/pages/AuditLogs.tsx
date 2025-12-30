@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Search, FileText, Eye, Download } from 'lucide-react';
+import TablePagination from '@/components/TablePagination';
 
 interface AuditLog {
   id: string;
@@ -75,6 +78,8 @@ export default function AuditLogs() {
     const matchesEntity = entityFilter === 'all' || log.entity_type === entityFilter;
     return matchesSearch && matchesAction && matchesEntity;
   });
+
+  const pagination = usePagination(filteredLogs, { initialPageSize: 20 });
 
   const uniqueActions = [...new Set(logs.map(l => l.action))];
   const uniqueEntities = [...new Set(logs.map(l => l.entity_type))];
@@ -173,93 +178,118 @@ export default function AuditLogs() {
           ) : filteredLogs.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No audit logs found</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Entity Type</TableHead>
-                  <TableHead>Entity ID</TableHead>
-                  <TableHead>User ID</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead className="text-right">Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getActionBadgeVariant(log.action)}>
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{log.entity_type}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {log.entity_id?.slice(0, 8)}...
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {log.user_id?.slice(0, 8)}...
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {log.ip_address || 'N/A'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Audit Log Details</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-sm text-muted-foreground">Action</p>
-                                <p className="font-medium">{log.action}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-muted-foreground">Entity Type</p>
-                                <p className="font-medium">{log.entity_type}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-muted-foreground">Entity ID</p>
-                                <p className="font-mono text-sm">{log.entity_id}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-muted-foreground">Timestamp</p>
-                                <p className="font-medium">{new Date(log.created_at).toLocaleString()}</p>
-                              </div>
-                            </div>
-                            {log.old_values && (
-                              <div>
-                                <p className="text-sm text-muted-foreground mb-2">Old Values</p>
-                                <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-40">
-                                  {JSON.stringify(log.old_values, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                            {log.new_values && (
-                              <div>
-                                <p className="text-sm text-muted-foreground mb-2">New Values</p>
-                                <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-40">
-                                  {JSON.stringify(log.new_values, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[900px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Entity Type</TableHead>
+                        <TableHead>Entity ID</TableHead>
+                        <TableHead>User ID</TableHead>
+                        <TableHead>IP Address</TableHead>
+                        <TableHead className="text-right">Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getActionBadgeVariant(log.action)}>
+                              {log.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{log.entity_type}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {log.entity_id?.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {log.user_id?.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {log.ip_address || 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Audit Log Details</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Action</p>
+                                      <p className="font-medium">{log.action}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Entity Type</p>
+                                      <p className="font-medium">{log.entity_type}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Entity ID</p>
+                                      <p className="font-mono text-sm">{log.entity_id}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">Timestamp</p>
+                                      <p className="font-medium">{new Date(log.created_at).toLocaleString()}</p>
+                                    </div>
+                                  </div>
+                                  {log.old_values && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground mb-2">Old Values</p>
+                                      <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-40">
+                                        {JSON.stringify(log.old_values, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                  {log.new_values && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground mb-2">New Values</p>
+                                      <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-40">
+                                        {JSON.stringify(log.new_values, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

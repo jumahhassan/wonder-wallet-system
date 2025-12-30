@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import TablePagination from '@/components/TablePagination';
 import { format } from 'date-fns';
 import { Search, Users, Clock, TrendingUp, Phone } from 'lucide-react';
 import { CURRENCY_SYMBOLS, CurrencyCode } from '@/types/database';
@@ -90,6 +93,8 @@ export default function MyClients() {
     c.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const pagination = usePagination(filteredClients, { initialPageSize: 10 });
+
   const totalClients = clients.length;
   const totalValue = clients.reduce((sum, c) => sum + c.totalValue, 0);
   const avgValue = totalClients > 0 ? totalValue / totalClients : 0;
@@ -110,7 +115,7 @@ export default function MyClients() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -151,9 +156,9 @@ export default function MyClients() {
       {/* Clients Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Client List</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search clients..."
@@ -172,52 +177,77 @@ export default function MyClients() {
               <p className="text-muted-foreground">Complete transactions to build your client list</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Transactions</TableHead>
-                  <TableHead>Total Value</TableHead>
-                  <TableHead>Last Activity</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.phone}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                          <Users className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <span className="font-medium">{client.name || 'Unknown'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        {client.phone}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{client.transactionCount}</Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {CURRENCY_SYMBOLS[client.currency]}{client.totalValue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(client.lastTransaction), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        New Transaction
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[700px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Transactions</TableHead>
+                        <TableHead>Total Value</TableHead>
+                        <TableHead>Last Activity</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((client) => (
+                        <TableRow key={client.phone}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                <Users className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                              <span className="font-medium">{client.name || 'Unknown'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-muted-foreground" />
+                              {client.phone}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{client.transactionCount}</Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {CURRENCY_SYMBOLS[client.currency]}{client.totalValue.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {format(new Date(client.lastTransaction), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="outline" size="sm">
+                              New Transaction
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,8 @@ import {
 import { Search, Download, ArrowLeftRight, Flag, RotateCcw, Printer } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, APPROVAL_STATUS_LABELS, ApprovalStatus, TransactionType, CurrencyCode } from '@/types/database';
 import ReceiptDialog from '@/components/ReceiptDialog';
+import TablePagination from '@/components/TablePagination';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TransactionData {
   id: string;
@@ -123,6 +126,8 @@ export default function Transactions() {
     const matchesType = typeFilter === 'all' || tx.transaction_type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  const pagination = usePagination(filteredTransactions, { initialPageSize: 10 });
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -225,79 +230,102 @@ export default function Transactions() {
           ) : filteredTransactions.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No transactions found</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Agent</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Approved By</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="font-mono text-xs">{tx.id.slice(0, 8)}...</TableCell>
-                      <TableCell>{tx.agent_name || tx.agent_email || 'N/A'}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{tx.recipient_name || 'N/A'}</p>
-                          <p className="text-xs text-muted-foreground">{tx.recipient_phone}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {TRANSACTION_TYPE_LABELS[tx.transaction_type]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {CURRENCY_SYMBOLS[tx.currency]}{Number(tx.amount).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(tx.approval_status)}>
-                          {APPROVAL_STATUS_LABELS[tx.approval_status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {tx.approved_by ? tx.approved_by.slice(0, 8) + '...' : '-'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(tx.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            title="Print Receipt"
-                            onClick={() => openReceipt(tx)}
-                            disabled={tx.approval_status !== 'approved'}
-                          >
-                            <Printer className="w-4 h-4" />
-                          </Button>
-                          {role === 'super_agent' && (
-                            <>
-                              <Button variant="ghost" size="sm" title="Reverse">
-                                <RotateCcw className="w-4 h-4" />
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[900px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Agent</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Approved By</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((tx) => (
+                        <TableRow key={tx.id}>
+                          <TableCell className="font-mono text-xs">{tx.id.slice(0, 8)}...</TableCell>
+                          <TableCell>{tx.agent_name || tx.agent_email || 'N/A'}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{tx.recipient_name || 'N/A'}</p>
+                              <p className="text-xs text-muted-foreground">{tx.recipient_phone}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {TRANSACTION_TYPE_LABELS[tx.transaction_type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {CURRENCY_SYMBOLS[tx.currency]}{Number(tx.amount).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(tx.approval_status)}>
+                              {APPROVAL_STATUS_LABELS[tx.approval_status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {tx.approved_by ? tx.approved_by.slice(0, 8) + '...' : '-'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(tx.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                title="Print Receipt"
+                                onClick={() => openReceipt(tx)}
+                                disabled={tx.approval_status !== 'approved'}
+                              >
+                                <Printer className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" title="Flag">
-                                <Flag className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                              {role === 'super_agent' && (
+                                <>
+                                  <Button variant="ghost" size="sm" title="Reverse">
+                                    <RotateCcw className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" title="Flag">
+                                    <Flag className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+              
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
