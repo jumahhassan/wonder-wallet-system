@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import ReceiptDialog from '@/components/ReceiptDialog';
+import TablePagination from '@/components/TablePagination';
 import { format } from 'date-fns';
 import { Search, Clock, CheckCircle, XCircle, AlertCircle, Printer } from 'lucide-react';
 import { 
@@ -142,6 +145,8 @@ export default function MyTransactions() {
     return matchesSearch && matchesStatus;
   });
 
+  const pagination = usePagination(filteredTransactions, { initialPageSize: 10 });
+
   const stats = {
     total: transactions.length,
     pending: transactions.filter(t => t.approval_status === 'pending').length,
@@ -165,7 +170,7 @@ export default function MyTransactions() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -215,11 +220,11 @@ export default function MyTransactions() {
       {/* Transactions Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Transaction History</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ApprovalStatus | 'all')}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,7 +234,7 @@ export default function MyTransactions() {
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search..."
@@ -253,66 +258,91 @@ export default function MyTransactions() {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-mono text-sm">
-                      {transaction.id.slice(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {TRANSACTION_TYPE_LABELS[transaction.transaction_type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{transaction.recipient_name || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground">{transaction.recipient_phone}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariants[transaction.approval_status]}>
-                        <span className="flex items-center gap-1">
-                          {statusIcons[transaction.approval_status]}
-                          {APPROVAL_STATUS_LABELS[transaction.approval_status]}
-                        </span>
-                      </Badge>
-                      {transaction.rejection_reason && (
-                        <p className="text-xs text-red-500 mt-1">{transaction.rejection_reason}</p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(transaction.created_at), 'MMM d, yyyy HH:mm')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openReceipt(transaction)}
-                        disabled={transaction.approval_status !== 'approved'}
-                      >
-                        <Printer className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[700px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="font-mono text-sm">
+                            {transaction.id.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {TRANSACTION_TYPE_LABELS[transaction.transaction_type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{transaction.recipient_name || 'N/A'}</p>
+                              <p className="text-sm text-muted-foreground">{transaction.recipient_phone}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusVariants[transaction.approval_status]}>
+                              <span className="flex items-center gap-1">
+                                {statusIcons[transaction.approval_status]}
+                                {APPROVAL_STATUS_LABELS[transaction.approval_status]}
+                              </span>
+                            </Badge>
+                            {transaction.rejection_reason && (
+                              <p className="text-xs text-red-500 mt-1">{transaction.rejection_reason}</p>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {format(new Date(transaction.created_at), 'MMM d, yyyy HH:mm')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openReceipt(transaction)}
+                              disabled={transaction.approval_status !== 'approved'}
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

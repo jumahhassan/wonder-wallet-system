@@ -30,11 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Search, Users, Clock, Wallet, TrendingUp, Plus } from 'lucide-react';
 import { CURRENCY_SYMBOLS, CurrencyCode } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from '@/hooks/usePagination';
+import TablePagination from '@/components/TablePagination';
 
 interface Agent {
   id: string;
@@ -216,6 +219,8 @@ export default function AgentsManagement() {
     a.phone?.includes(searchTerm)
   );
 
+  const pagination = usePagination(filteredAgents, { initialPageSize: 10 });
+
   const totalFloat = agents.reduce((sum, a) => sum + a.float_balance, 0);
   const activeAgents = agents.filter(a => a.is_active).length;
 
@@ -235,7 +240,7 @@ export default function AgentsManagement() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -287,9 +292,9 @@ export default function AgentsManagement() {
       {/* Agents Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Sales Agents</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search agents..."
@@ -308,62 +313,87 @@ export default function AgentsManagement() {
               <p className="text-muted-foreground">Sales agents will appear here once registered</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Agent</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Float Balance</TableHead>
-                  <TableHead>Transactions</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAgents.map((agent) => (
-                  <TableRow key={agent.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{agent.full_name || 'Unnamed'}</p>
-                        <p className="text-sm text-muted-foreground">{agent.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{agent.phone || 'N/A'}</TableCell>
-                    <TableCell className="font-medium">
-                      ${agent.float_balance.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{agent.transaction_count}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(agent.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={agent.is_active}
-                          onCheckedChange={() => toggleAgentStatus(agent.id, agent.is_active)}
-                        />
-                        <span className={agent.is_active ? 'text-green-600' : 'text-muted-foreground'}>
-                          {agent.is_active ? 'Active' : 'Disabled'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => openAllocateDialog(agent)}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Allocate Float
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[800px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Agent</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Float Balance</TableHead>
+                        <TableHead>Transactions</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((agent) => (
+                        <TableRow key={agent.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{agent.full_name || 'Unnamed'}</p>
+                              <p className="text-sm text-muted-foreground">{agent.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{agent.phone || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">
+                            ${agent.float_balance.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{agent.transaction_count}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {format(new Date(agent.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={agent.is_active}
+                                onCheckedChange={() => toggleAgentStatus(agent.id, agent.is_active)}
+                              />
+                              <span className={agent.is_active ? 'text-green-600' : 'text-muted-foreground'}>
+                                {agent.is_active ? 'Active' : 'Disabled'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openAllocateDialog(agent)}
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Allocate Float
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

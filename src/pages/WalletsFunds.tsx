@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePagination } from '@/hooks/usePagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,17 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Plus, ArrowUpDown, DollarSign, Users } from 'lucide-react';
+import { Wallet, Plus, DollarSign } from 'lucide-react';
 import { Wallet as WalletType, Profile, CurrencyCode, CURRENCY_SYMBOLS } from '@/types/database';
+import TablePagination from '@/components/TablePagination';
 
 interface WalletWithUser extends WalletType {
   user_email?: string;
@@ -82,6 +78,8 @@ export default function WalletsFunds() {
     setLoading(false);
   };
 
+  const pagination = usePagination(wallets, { initialPageSize: 10 });
+
   const handleTopUp = async () => {
     if (!selectedWallet || !topUpAmount) return;
     
@@ -122,7 +120,7 @@ export default function WalletsFunds() {
       </div>
 
       {/* Currency Totals */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {currencyCards.map((card) => (
           <Card key={card.currency} className="border-border/50">
             <CardContent className="p-6">
@@ -154,75 +152,100 @@ export default function WalletsFunds() {
           {loading ? (
             <p className="text-muted-foreground">Loading wallets...</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Currency</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {wallets.map((wallet) => (
-                  <TableRow key={wallet.id}>
-                    <TableCell className="font-medium">{wallet.user_name || 'N/A'}</TableCell>
-                    <TableCell>{wallet.user_email || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{wallet.currency}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
-                    </TableCell>
-                    <TableCell>{new Date(wallet.updated_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <Dialog open={topUpDialogOpen && selectedWallet?.id === wallet.id} onOpenChange={(open) => {
-                        setTopUpDialogOpen(open);
-                        if (open) setSelectedWallet(wallet);
-                      }}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-1">
-                            <Plus className="w-4 h-4" />
-                            Top Up
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Top Up Wallet</DialogTitle>
-                            <DialogDescription>
-                              Add funds to {wallet.user_name || wallet.user_email}'s {wallet.currency} wallet
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label>Current Balance</Label>
-                              <p className="text-2xl font-bold">
-                                {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Amount to Add</Label>
-                              <Input
-                                type="number"
-                                placeholder="Enter amount"
-                                value={topUpAmount}
-                                onChange={(e) => setTopUpAmount(e.target.value)}
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setTopUpDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleTopUp}>Top Up</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <ScrollArea className="w-full">
+                <div className="min-w-[700px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Currency</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((wallet) => (
+                        <TableRow key={wallet.id}>
+                          <TableCell className="font-medium">{wallet.user_name || 'N/A'}</TableCell>
+                          <TableCell>{wallet.user_email || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{wallet.currency}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
+                          </TableCell>
+                          <TableCell>{new Date(wallet.updated_at).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <Dialog open={topUpDialogOpen && selectedWallet?.id === wallet.id} onOpenChange={(open) => {
+                              setTopUpDialogOpen(open);
+                              if (open) setSelectedWallet(wallet);
+                            }}>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-1">
+                                  <Plus className="w-4 h-4" />
+                                  Top Up
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Top Up Wallet</DialogTitle>
+                                  <DialogDescription>
+                                    Add funds to {wallet.user_name || wallet.user_email}'s {wallet.currency} wallet
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <div className="space-y-2">
+                                    <Label>Current Balance</Label>
+                                    <p className="text-2xl font-bold">
+                                      {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Amount to Add</Label>
+                                    <Input
+                                      type="number"
+                                      placeholder="Enter amount"
+                                      value={topUpAmount}
+                                      onChange={(e) => setTopUpAmount(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => setTopUpDialogOpen(false)}>Cancel</Button>
+                                  <Button onClick={handleTopUp}>Top Up</Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                pageSizeOptions={pagination.pageSizeOptions}
+                canGoNext={pagination.canGoNext}
+                canGoPrev={pagination.canGoPrev}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+                onNextPage={pagination.nextPage}
+                onPrevPage={pagination.prevPage}
+                onFirstPage={pagination.firstPage}
+                onLastPage={pagination.lastPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
