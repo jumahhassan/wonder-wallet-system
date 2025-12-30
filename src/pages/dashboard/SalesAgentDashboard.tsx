@@ -112,29 +112,29 @@ export default function SalesAgentDashboard() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold">Agent Dashboard</h1>
-          <p className="text-muted-foreground">Your sales performance and activity</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold">Agent Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Your sales performance and activity</p>
         </div>
-        <Button onClick={() => navigate('/new-sale')} className="gap-2">
+        <Button onClick={() => navigate('/new-sale')} className="gap-2 w-full sm:w-auto">
           <Plus className="w-4 h-4" />
           New Sale Request
         </Button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-lg md:text-2xl font-bold mt-1 truncate">{stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-full ${stat.bg} ${stat.color}`}>{stat.icon}</div>
+                <div className={`p-2 md:p-3 rounded-full ${stat.bg} ${stat.color} self-start sm:self-auto shrink-0`}>{stat.icon}</div>
               </div>
             </CardContent>
           </Card>
@@ -143,15 +143,15 @@ export default function SalesAgentDashboard() {
 
       {/* Wallet Balances */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Your Wallets</CardTitle>
+        <CardHeader className="pb-2 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Your Wallets</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
             {wallets.map((wallet) => (
-              <div key={wallet.id} className="p-4 rounded-lg bg-muted/50 text-center">
-                <p className="text-sm text-muted-foreground">{wallet.currency}</p>
-                <p className="text-xl font-bold mt-1">
+              <div key={wallet.id} className="p-3 md:p-4 rounded-lg bg-muted/50 text-center">
+                <p className="text-xs md:text-sm text-muted-foreground">{wallet.currency}</p>
+                <p className="text-base md:text-xl font-bold mt-1 truncate">
                   {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
                 </p>
               </div>

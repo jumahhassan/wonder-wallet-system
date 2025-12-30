@@ -263,13 +263,13 @@ export default function SalesRequests() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Sales Requests</h1>
-          <p className="text-muted-foreground">Review and approve pending sales requests</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Sales Requests</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Review and approve pending sales requests</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
+        <Badge variant="secondary" className="text-base md:text-lg px-3 md:px-4 py-1.5 md:py-2 self-start sm:self-auto">
           {requests.length} Pending
         </Badge>
       </div>
@@ -342,15 +342,15 @@ export default function SalesRequests() {
                             {format(new Date(request.created_at), 'MMM d, HH:mm')}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => handleApprove(request)}
                                 disabled={processing}
                                 className="bg-green-600 hover:bg-green-700"
                               >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Approve
+                                <CheckCircle className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Approve</span>
                               </Button>
                               <Button
                                 size="sm"
@@ -358,8 +358,8 @@ export default function SalesRequests() {
                                 onClick={() => openRejectDialog(request)}
                                 disabled={processing}
                               >
-                                <XCircle className="w-4 h-4 mr-1" />
-                                Reject
+                                <XCircle className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Reject</span>
                               </Button>
                               <Button
                                 size="sm"
@@ -368,8 +368,8 @@ export default function SalesRequests() {
                                 disabled={processing}
                                 className="border-orange-500 text-orange-600 hover:bg-orange-50"
                               >
-                                <AlertTriangle className="w-4 h-4 mr-1" />
-                                Escalate
+                                <AlertTriangle className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Escalate</span>
                               </Button>
                             </div>
                           </TableCell>

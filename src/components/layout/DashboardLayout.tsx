@@ -1,7 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import {
   LayoutDashboard,
   Smartphone,
@@ -21,8 +28,9 @@ import {
   FileText,
   LogOut,
   ChevronRight,
-  Globe,
   AlertTriangle,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
@@ -65,6 +73,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const filteredNavItems = navItems.filter((item) => role && item.roles.includes(role));
 
@@ -77,74 +87,105 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return email.substring(0, 2).toUpperCase();
   };
 
+  const handleNavClick = (href: string) => {
+    navigate(href);
+    setSidebarOpen(false);
+  };
+
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
+        <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto rounded" />
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        {filteredNavItems.map((item) => {
+          const isActive = location.pathname === item.href;
+          return (
+            <button
+              key={item.href}
+              onClick={() => handleNavClick(item.href)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                isActive
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+              )}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* User */}
+      <div className="p-4 border-t border-sidebar-border">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {user?.email ? getInitials(user.email) : 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {user?.email}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60">
+                  {role ? ROLE_LABELS[role] : 'Loading...'}
+                </p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-40 h-screen w-64 gradient-sidebar border-r border-sidebar-border">
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
-            <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto rounded" />
-          </div>
+      {/* Mobile Header */}
+      {isMobile && (
+        <header className="fixed top-0 left-0 right-0 z-50 h-14 gradient-sidebar border-b border-sidebar-border flex items-center justify-between px-4">
+          <img src={wondersLogo} alt="Wonders M Ltd" className="h-8 w-auto rounded" />
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-sidebar-foreground">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-64 p-0 gradient-sidebar border-l border-sidebar-border">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+        </header>
+      )}
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {filteredNavItems.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <button
-                  key={item.href}
-                  onClick={() => navigate(item.href)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-lg'
-                      : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
-                  )}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* User */}
-          <div className="p-4 border-t border-sidebar-border">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {user?.email ? getInitials(user.email) : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">
-                      {user?.email}
-                    </p>
-                    <p className="text-xs text-sidebar-foreground/60">
-                      {role ? ROLE_LABELS[role] : 'Loading...'}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </aside>
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <aside className="fixed left-0 top-0 z-40 h-screen w-64 gradient-sidebar border-r border-sidebar-border">
+          <SidebarContent />
+        </aside>
+      )}
 
       {/* Main content */}
-      <main className="ml-64 flex-1 p-8">
+      <main className={cn(
+        "flex-1 p-4 md:p-6 lg:p-8",
+        isMobile ? "pt-18 mt-14" : "ml-64"
+      )}>
         {children}
       </main>
     </div>
