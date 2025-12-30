@@ -61,29 +61,41 @@ export default function NewSaleRequest() {
       return;
     }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    const amount = parseFloat(formData.amount);
+    if (!formData.amount || isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (amount > 1000000) {
+      toast.error('Amount cannot exceed 1,000,000');
       return;
     }
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('transactions').insert({
-        agent_id: user?.id,
-        transaction_type: formData.serviceType,
-        amount: parseFloat(formData.amount),
-        currency: formData.currency,
-        recipient_name: formData.clientName.trim() || null,
-        recipient_phone: formData.clientPhone.trim(),
-        metadata: {
-          destination: formData.destination.trim() || null,
-          notes: formData.notes.trim() || null,
+      // Use validated edge function for server-side validation
+      const { data, error } = await supabase.functions.invoke('validate-transaction', {
+        body: {
+          transaction_type: formData.serviceType,
+          amount: amount,
+          currency: formData.currency,
+          recipient_name: formData.clientName.trim() || undefined,
+          recipient_phone: formData.clientPhone.trim(),
+          metadata: {
+            destination: formData.destination.trim() || undefined,
+            notes: formData.notes.trim() || undefined,
+          },
         },
-        approval_status: 'pending',
-        status: 'pending',
       });
 
       if (error) throw error;
+
+      if (!data.success) {
+        const errorMessage = data.errors?.join(', ') || 'Validation failed';
+        toast.error(errorMessage);
+        return;
+      }
 
       toast.success('Sale request submitted successfully');
       navigate('/my-transactions');

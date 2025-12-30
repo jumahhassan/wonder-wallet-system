@@ -11,3 +11,12 @@ verify_jwt = true
 
 [functions.send-password-reset-email]
 verify_jwt = false
+
+[functions.validate-transaction]
+verify_jwt = true
+
+[functions.validate-wallet-topup]
+verify_jwt = true
+
+[functions.validate-float-allocation]
+verify_jwt = true

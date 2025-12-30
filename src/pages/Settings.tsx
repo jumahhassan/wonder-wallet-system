@@ -51,6 +51,16 @@ export default function Settings() {
   };
 
   const handleUpdateRate = async (id: string, rate: number) => {
+    // Client-side validation
+    if (isNaN(rate) || rate <= 0) {
+      toast({ title: 'Error', description: 'Rate must be a positive number', variant: 'destructive' });
+      return;
+    }
+    if (rate > 1000000) {
+      toast({ title: 'Error', description: 'Rate cannot exceed 1,000,000', variant: 'destructive' });
+      return;
+    }
+
     setSaving(true);
     const { error } = await supabase
       .from('exchange_rates')
@@ -67,6 +77,20 @@ export default function Settings() {
   };
 
   const handleUpdateCommission = async (id: string, updates: Partial<CommissionSetting>) => {
+    // Client-side validation
+    for (const [key, value] of Object.entries(updates)) {
+      if (typeof value === 'number') {
+        if (isNaN(value) || value < 0) {
+          toast({ title: 'Error', description: `${key.replace(/_/g, ' ')} must be a non-negative number`, variant: 'destructive' });
+          return;
+        }
+        if (value > 1000000) {
+          toast({ title: 'Error', description: `${key.replace(/_/g, ' ')} cannot exceed 1,000,000`, variant: 'destructive' });
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     const { error } = await supabase
       .from('commission_settings')

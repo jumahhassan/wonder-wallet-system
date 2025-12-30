@@ -88,21 +88,36 @@ export default function WalletsFunds() {
       toast({ title: 'Error', description: 'Please enter a valid amount', variant: 'destructive' });
       return;
     }
+
+    if (amount > 1000000) {
+      toast({ title: 'Error', description: 'Amount cannot exceed 1,000,000', variant: 'destructive' });
+      return;
+    }
     
-    const newBalance = Number(selectedWallet.balance) + amount;
-    
-    const { error } = await supabase
-      .from('wallets')
-      .update({ balance: newBalance })
-      .eq('id', selectedWallet.id);
-    
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to top up wallet', variant: 'destructive' });
-    } else {
+    try {
+      // Use validated edge function for server-side validation
+      const { data, error } = await supabase.functions.invoke('validate-wallet-topup', {
+        body: {
+          wallet_id: selectedWallet.id,
+          amount: amount,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        const errorMessage = data.errors?.join(', ') || 'Validation failed';
+        toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+        return;
+      }
+
       toast({ title: 'Success', description: `Added ${CURRENCY_SYMBOLS[selectedWallet.currency]}${amount} to wallet` });
       setTopUpDialogOpen(false);
       setTopUpAmount('');
       fetchWallets();
+    } catch (error) {
+      console.error('Top up error:', error);
+      toast({ title: 'Error', description: 'Failed to top up wallet', variant: 'destructive' });
     }
   };
 
