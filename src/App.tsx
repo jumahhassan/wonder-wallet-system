@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import SalesRequests from "./pages/SalesRequests";
+import EscalatedRequests from "./pages/EscalatedRequests";
 import AgentsManagement from "./pages/AgentsManagement";
 import NewSaleRequest from "./pages/NewSaleRequest";
 import MyTransactions from "./pages/MyTransactions";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/audit-logs" element={<ProtectedPage allowedRoles={['super_agent']}><AuditLogs /></ProtectedPage>} />
             <Route path="/settings" element={<ProtectedPage allowedRoles={['super_agent']}><Settings /></ProtectedPage>} />
             <Route path="/sales-requests" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><SalesRequests /></ProtectedPage>} />
+            <Route path="/escalated-requests" element={<ProtectedPage allowedRoles={['super_agent']}><EscalatedRequests /></ProtectedPage>} />
             <Route path="/agents" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><AgentsManagement /></ProtectedPage>} />
             <Route path="/new-sale" element={<ProtectedPage allowedRoles={['sales_agent']}><NewSaleRequest /></ProtectedPage>} />
             <Route path="/my-transactions" element={<ProtectedPage allowedRoles={['sales_agent']}><MyTransactions /></ProtectedPage>} />

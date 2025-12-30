@@ -26,11 +26,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Search, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Search, CheckCircle, XCircle, AlertTriangle, Clock, ArrowUpCircle } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS, TransactionType, CurrencyCode, ApprovalStatus } from '@/types/database';
 import TablePagination from '@/components/TablePagination';
 
-interface TransactionRequest {
+interface EscalatedRequest {
   id: string;
   agent_id: string;
   transaction_type: TransactionType;
@@ -39,35 +39,38 @@ interface TransactionRequest {
   recipient_phone: string | null;
   recipient_name: string | null;
   approval_status: ApprovalStatus;
+  escalation_reason: string | null;
+  escalated_by: string | null;
+  escalated_at: string | null;
   created_at: string;
   agent_name?: string;
   agent_email?: string;
+  escalator_name?: string;
 }
 
-export default function SalesRequests() {
+export default function EscalatedRequests() {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<TransactionRequest[]>([]);
+  const [requests, setRequests] = useState<EscalatedRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState<TransactionRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<EscalatedRequest | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [escalationReason, setEscalationReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     fetchRequests();
     
     const channel = supabase
-      .channel('sales-requests-changes')
+      .channel('escalated-requests-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'transactions',
-          filter: 'approval_status=eq.pending'
+          filter: 'approval_status=eq.escalated'
         },
         () => fetchRequests()
       )
@@ -82,46 +85,50 @@ export default function SalesRequests() {
     try {
       const { data: transactions, error } = await supabase
         .from('transactions')
-        .select('id, agent_id, transaction_type, amount, currency, recipient_phone, recipient_name, approval_status, created_at')
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
+        .select('id, agent_id, transaction_type, amount, currency, recipient_phone, recipient_name, approval_status, escalation_reason, escalated_by, escalated_at, created_at')
+        .eq('approval_status', 'escalated')
+        .order('escalated_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch agent profiles
+      // Fetch agent and escalator profiles
       const agentIds = [...new Set(transactions?.map(t => t.agent_id).filter(Boolean))] as string[];
-      let agentMap: Record<string, { full_name: string | null; email: string }> = {};
+      const escalatorIds = [...new Set(transactions?.map(t => t.escalated_by).filter(Boolean))] as string[];
+      const allUserIds = [...new Set([...agentIds, ...escalatorIds])];
+      
+      let userMap: Record<string, { full_name: string | null; email: string }> = {};
 
-      if (agentIds.length > 0) {
+      if (allUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name, email')
-          .in('id', agentIds);
+          .in('id', allUserIds);
 
         if (profiles) {
-          agentMap = profiles.reduce((acc, p) => {
+          userMap = profiles.reduce((acc, p) => {
             acc[p.id] = { full_name: p.full_name, email: p.email };
             return acc;
           }, {} as Record<string, { full_name: string | null; email: string }>);
         }
       }
 
-      const requestsWithAgent: TransactionRequest[] = (transactions || []).map(t => ({
+      const requestsWithDetails: EscalatedRequest[] = (transactions || []).map(t => ({
         ...t,
-        agent_name: t.agent_id ? agentMap[t.agent_id]?.full_name || undefined : undefined,
-        agent_email: t.agent_id ? agentMap[t.agent_id]?.email : undefined,
+        agent_name: t.agent_id ? userMap[t.agent_id]?.full_name || undefined : undefined,
+        agent_email: t.agent_id ? userMap[t.agent_id]?.email : undefined,
+        escalator_name: t.escalated_by ? userMap[t.escalated_by]?.full_name || userMap[t.escalated_by]?.email : undefined,
       }));
 
-      setRequests(requestsWithAgent);
+      setRequests(requestsWithDetails);
     } catch (error) {
-      console.error('Error fetching requests:', error);
-      toast.error('Failed to load sales requests');
+      console.error('Error fetching escalated requests:', error);
+      toast.error('Failed to load escalated requests');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (request: TransactionRequest) => {
+  const handleApprove = async (request: EscalatedRequest) => {
     setProcessing(true);
     try {
       const { error } = await supabase
@@ -136,7 +143,7 @@ export default function SalesRequests() {
 
       if (error) throw error;
 
-      toast.success('Request approved successfully');
+      toast.success('Escalated request approved');
       fetchRequests();
     } catch (error) {
       console.error('Error approving request:', error);
@@ -164,7 +171,7 @@ export default function SalesRequests() {
 
       if (error) throw error;
 
-      toast.success('Request rejected');
+      toast.success('Escalated request rejected');
       setRejectDialogOpen(false);
       setSelectedRequest(null);
       setRejectionReason('');
@@ -177,51 +184,22 @@ export default function SalesRequests() {
     }
   };
 
-  const openRejectDialog = (request: TransactionRequest) => {
+  const openRejectDialog = (request: EscalatedRequest) => {
     setSelectedRequest(request);
     setRejectDialogOpen(true);
   };
 
-  const openEscalateDialog = (request: TransactionRequest) => {
+  const openDetailDialog = (request: EscalatedRequest) => {
     setSelectedRequest(request);
-    setEscalateDialogOpen(true);
-  };
-
-  const handleEscalate = async () => {
-    if (!selectedRequest) return;
-    
-    setProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({
-          approval_status: 'escalated',
-          escalated_by: user?.id,
-          escalated_at: new Date().toISOString(),
-          escalation_reason: escalationReason,
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      toast.success('Request escalated to Super Agent');
-      setEscalateDialogOpen(false);
-      setSelectedRequest(null);
-      setEscalationReason('');
-      fetchRequests();
-    } catch (error) {
-      console.error('Error escalating request:', error);
-      toast.error('Failed to escalate request');
-    } finally {
-      setProcessing(false);
-    }
+    setDetailDialogOpen(true);
   };
 
   const filteredRequests = requests.filter(r => 
     r.recipient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.recipient_phone?.includes(searchTerm) ||
     r.agent_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.agent_email?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.agent_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.escalation_reason?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const pagination = usePagination(filteredRequests, { initialPageSize: 10 });
@@ -238,18 +216,21 @@ export default function SalesRequests() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Sales Requests</h1>
-          <p className="text-muted-foreground">Review and approve pending sales requests</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <AlertTriangle className="w-8 h-8 text-orange-500" />
+            Escalated Requests
+          </h1>
+          <p className="text-muted-foreground">Review requests escalated by Sales Assistants</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
-          {requests.length} Pending
+        <Badge variant="outline" className="text-lg px-4 py-2 border-orange-500 text-orange-500">
+          {requests.length} Escalated
         </Badge>
       </div>
 
-      <Card>
+      <Card className="border-orange-500/30">
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle>Pending Requests</CardTitle>
+            <CardTitle>Requests Awaiting Super Agent Review</CardTitle>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
@@ -265,13 +246,13 @@ export default function SalesRequests() {
           {filteredRequests.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-4" />
-              <h3 className="text-lg font-medium">All caught up!</h3>
-              <p className="text-muted-foreground">No pending requests to review</p>
+              <h3 className="text-lg font-medium">No escalated requests</h3>
+              <p className="text-muted-foreground">All escalated requests have been reviewed</p>
             </div>
           ) : (
             <>
               <ScrollArea className="w-full">
-                <div className="min-w-[900px]">
+                <div className="min-w-[1000px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -280,13 +261,14 @@ export default function SalesRequests() {
                         <TableHead>Service</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Client</TableHead>
-                        <TableHead>Time</TableHead>
+                        <TableHead>Escalated By</TableHead>
+                        <TableHead>Reason</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {pagination.paginatedData.map((request) => (
-                        <TableRow key={request.id}>
+                        <TableRow key={request.id} className="bg-orange-500/5">
                           <TableCell className="font-mono text-sm">
                             {request.id.slice(0, 8)}...
                           </TableCell>
@@ -310,8 +292,26 @@ export default function SalesRequests() {
                               <p className="text-sm text-muted-foreground">{request.recipient_phone}</p>
                             </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {format(new Date(request.created_at), 'MMM d, HH:mm')}
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <ArrowUpCircle className="w-4 h-4 text-orange-500" />
+                              <span className="text-sm">{request.escalator_name || 'Unknown'}</span>
+                            </div>
+                            {request.escalated_at && (
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(request.escalated_at), 'MMM d, HH:mm')}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openDetailDialog(request)}
+                              className="text-orange-600 hover:text-orange-700"
+                            >
+                              View Reason
+                            </Button>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -332,16 +332,6 @@ export default function SalesRequests() {
                               >
                                 <XCircle className="w-4 h-4 mr-1" />
                                 Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEscalateDialog(request)}
-                                disabled={processing}
-                                className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-1" />
-                                Escalate
                               </Button>
                             </div>
                           </TableCell>
@@ -379,9 +369,9 @@ export default function SalesRequests() {
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Request</DialogTitle>
+            <DialogTitle>Reject Escalated Request</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this request.
+              Please provide a reason for rejecting this escalated request.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -405,31 +395,46 @@ export default function SalesRequests() {
         </DialogContent>
       </Dialog>
 
-      {/* Escalate Dialog */}
-      <Dialog open={escalateDialogOpen} onOpenChange={setEscalateDialogOpen}>
+      {/* Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Escalate to Super Agent</DialogTitle>
-            <DialogDescription>
-              This will forward the request to a Super Agent for review. Please provide a reason for escalation.
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Escalation Details
+            </DialogTitle>
           </DialogHeader>
-          <Textarea
-            placeholder="Enter escalation reason (e.g., high value transaction, needs verification)..."
-            value={escalationReason}
-            onChange={(e) => setEscalationReason(e.target.value)}
-            rows={4}
-          />
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Escalated By</p>
+                <p className="font-medium">{selectedRequest.escalator_name || 'Unknown'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Escalation Time</p>
+                <p>{selectedRequest.escalated_at ? format(new Date(selectedRequest.escalated_at), 'PPpp') : 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Escalation Reason</p>
+                <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                  <p>{selectedRequest.escalation_reason || 'No reason provided'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Amount</p>
+                  <p className="font-semibold">{CURRENCY_SYMBOLS[selectedRequest.currency]}{selectedRequest.amount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Service</p>
+                  <Badge variant="outline">{TRANSACTION_TYPE_LABELS[selectedRequest.transaction_type]}</Badge>
+                </div>
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEscalateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEscalate}
-              disabled={!escalationReason.trim() || processing}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              Confirm Escalate
+            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
