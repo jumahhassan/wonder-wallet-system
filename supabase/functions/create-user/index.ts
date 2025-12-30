@@ -121,6 +121,60 @@ serve(async (req) => {
       }
     }
 
+    // Send welcome email via Brevo
+    try {
+      const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+      if (brevoApiKey) {
+        const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "api-key": brevoApiKey,
+          },
+          body: JSON.stringify({
+            sender: {
+              name: "Wonders Mobile Money",
+              email: "noreply@wondersmobilemoney.com",
+            },
+            to: [{ email, name: fullName }],
+            subject: "Welcome to Wonders Mobile Money",
+            htmlContent: `
+              <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #1e3a5f;">Welcome to Wonders Mobile Money!</h1>
+                    <p>Dear ${fullName},</p>
+                    <p>Your account has been successfully created. You have been assigned the role of <strong>${role.replace('_', ' ').toUpperCase()}</strong>.</p>
+                    <p>You can now log in to your account using the credentials provided by your supervisor.</p>
+                    <div style="margin: 30px 0;">
+                      <p><strong>What you can do:</strong></p>
+                      <ul>
+                        <li>Process mobile money transactions</li>
+                        <li>View your transaction history</li>
+                        <li>Track your commissions</li>
+                      </ul>
+                    </div>
+                    <p>If you have any questions, please contact your supervisor.</p>
+                    <p style="margin-top: 30px;">Best regards,<br>The Wonders Mobile Money Team</p>
+                  </div>
+                </body>
+              </html>
+            `,
+          }),
+        });
+        
+        if (!emailResponse.ok) {
+          console.error("Failed to send welcome email:", await emailResponse.text());
+        } else {
+          console.log("Welcome email sent successfully");
+        }
+      }
+    } catch (emailError) {
+      console.error("Error sending welcome email:", emailError);
+      // Don't fail the user creation if email fails
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

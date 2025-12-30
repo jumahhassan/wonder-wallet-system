@@ -128,6 +128,28 @@ export default function EscalatedRequests() {
     }
   };
 
+  const sendTransactionEmail = async (request: EscalatedRequest, status: string) => {
+    try {
+      if (!request.agent_id || !request.agent_email) return;
+      
+      await supabase.functions.invoke('send-transaction-email', {
+        body: {
+          email: request.agent_email,
+          fullName: request.agent_name || 'Agent',
+          transactionType: request.transaction_type,
+          amount: request.amount,
+          currency: request.currency,
+          recipientName: request.recipient_name,
+          recipientPhone: request.recipient_phone,
+          status: status,
+          transactionId: request.id,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send transaction email:', error);
+    }
+  };
+
   const handleApprove = async (request: EscalatedRequest) => {
     setProcessing(true);
     try {
@@ -142,6 +164,9 @@ export default function EscalatedRequests() {
         .eq('id', request.id);
 
       if (error) throw error;
+
+      // Send email notification
+      sendTransactionEmail(request, 'approved');
 
       toast.success('Escalated request approved');
       fetchRequests();
@@ -170,6 +195,9 @@ export default function EscalatedRequests() {
         .eq('id', selectedRequest.id);
 
       if (error) throw error;
+
+      // Send email notification
+      sendTransactionEmail(selectedRequest, 'rejected');
 
       toast.success('Escalated request rejected');
       setRejectDialogOpen(false);
