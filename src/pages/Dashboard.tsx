@@ -9,7 +9,7 @@ import { Transaction, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/
 export default function Dashboard() {
   const { role } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, volume: 0 });
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, volumeUSD: 0, volumeSSP: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,8 +37,9 @@ export default function Dashboard() {
       const total = data.length;
       const pending = data.filter(t => t.approval_status === 'pending').length;
       const approved = data.filter(t => t.approval_status === 'approved').length;
-      const volume = data.reduce((sum, t) => sum + Number(t.amount), 0);
-      setStats({ total, pending, approved, volume });
+      const volumeUSD = data.filter(t => t.currency === 'USD').reduce((sum, t) => sum + Number(t.amount), 0);
+      const volumeSSP = data.filter(t => t.currency === 'SSP').reduce((sum, t) => sum + Number(t.amount), 0);
+      setStats({ total, pending, approved, volumeUSD, volumeSSP });
     }
     setLoading(false);
   };
@@ -47,7 +48,8 @@ export default function Dashboard() {
     { title: 'Total Transactions', value: stats.total, icon: <ArrowUpRight className="w-5 h-5" />, color: 'text-primary' },
     { title: 'Pending Approval', value: stats.pending, icon: <Clock className="w-5 h-5" />, color: 'text-warning' },
     { title: 'Approved Today', value: stats.approved, icon: <CheckCircle className="w-5 h-5" />, color: 'text-success' },
-    { title: 'Volume (USD)', value: `$${stats.volume.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info' },
+    { title: 'Volume (USD)', value: `$${stats.volumeUSD.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info' },
+    { title: 'Volume (SSP)', value: `SSP ${stats.volumeSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info' },
   ];
 
   return (
@@ -57,7 +59,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Real-time transaction monitoring</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50">
             <CardContent className="p-6">
