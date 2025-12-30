@@ -32,16 +32,27 @@ import {
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Edit } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Search, Edit, UserPlus, Loader2 } from 'lucide-react';
 import { Profile, AppRole, ROLE_LABELS } from '@/types/database';
 import TablePagination from '@/components/TablePagination';
+import { z } from 'zod';
 
 interface UserWithRole extends Profile {
   role: AppRole;
 }
 
+const createUserSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  phone: z.string().optional(),
+  role: z.enum(['super_agent', 'sales_assistant', 'sales_agent']),
+});
+
 export default function UsersManagement() {
   const { toast } = useToast();
+  const { session } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +60,18 @@ export default function UsersManagement() {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
   const [editRole, setEditRole] = useState<AppRole>('sales_agent');
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Create user state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+    role: 'sales_agent' as AppRole,
+  });
+  const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchUsers();
@@ -89,6 +112,67 @@ export default function UsersManagement() {
     }
   };
 
+  const validateCreateForm = () => {
+    try {
+      createUserSchema.parse(newUser);
+      setCreateErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        err.errors.forEach((e) => {
+          if (e.path[0]) {
+            errors[e.path[0] as string] = e.message;
+          }
+        });
+        setCreateErrors(errors);
+      }
+      return false;
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!validateCreateForm()) return;
+    
+    setCreating(true);
+    try {
+      const response = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+          fullName: newUser.fullName,
+          phone: newUser.phone || undefined,
+          role: newUser.role,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast({ 
+        title: 'User Created', 
+        description: `${newUser.fullName} has been registered as ${ROLE_LABELS[newUser.role]}` 
+      });
+      
+      setCreateDialogOpen(false);
+      setNewUser({ email: '', password: '', fullName: '', phone: '', role: 'sales_agent' });
+      fetchUsers();
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to create user', 
+        description: error.message || 'An error occurred', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,6 +198,94 @@ export default function UsersManagement() {
           <h1 className="text-3xl font-display font-bold">Users Management</h1>
           <p className="text-muted-foreground">Manage system users and their roles</p>
         </div>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              Register New User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Register New User</DialogTitle>
+              <DialogDescription>
+                Create a new user account. They will be able to sign in immediately.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-name">Full Name</Label>
+                <Input
+                  id="create-name"
+                  placeholder="Enter full name"
+                  value={newUser.fullName}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, fullName: e.target.value }))}
+                  className={createErrors.fullName ? 'border-destructive' : ''}
+                />
+                {createErrors.fullName && <p className="text-sm text-destructive">{createErrors.fullName}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-email">Email</Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className={createErrors.email ? 'border-destructive' : ''}
+                />
+                {createErrors.email && <p className="text-sm text-destructive">{createErrors.email}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-phone">Phone (optional)</Label>
+                <Input
+                  id="create-phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-password">Password</Label>
+                <Input
+                  id="create-password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  className={createErrors.password ? 'border-destructive' : ''}
+                />
+                {createErrors.password && <p className="text-sm text-destructive">{createErrors.password}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-role">Role</Label>
+                <Select 
+                  value={newUser.role} 
+                  onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v as AppRole }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                    <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
+                    <SelectItem value="sales_agent">Sales Agent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateUser} disabled={creating}>
+                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}

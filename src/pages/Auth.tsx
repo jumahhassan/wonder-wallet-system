@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield, Wallet } from 'lucide-react';
 import wondersLogo from '@/assets/wonders-logo.jpg';
@@ -14,17 +13,15 @@ import { z } from 'zod';
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
 });
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const { signIn, signUp, user, role } = useAuth();
+  const { signIn, user, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,13 +31,9 @@ export default function Auth() {
     }
   }, [user, role, navigate]);
 
-  const validateForm = (isSignUp: boolean) => {
+  const validateForm = () => {
     try {
-      if (isSignUp) {
-        authSchema.parse({ email, password, fullName });
-      } else {
-        authSchema.pick({ email: true, password: true }).parse({ email, password });
-      }
+      authSchema.parse({ email, password });
       setErrors({});
       return true;
     } catch (err) {
@@ -59,7 +52,7 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm(false)) return;
+    if (!validateForm()) return;
     
     setIsLoading(true);
     const { error } = await signIn(email, password);
@@ -72,30 +65,6 @@ export default function Auth() {
           ? 'Invalid email or password. Please try again.'
           : error.message,
         variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm(true)) return;
-    
-    setIsLoading(true);
-    const { error } = await signUp(email, password, fullName);
-    setIsLoading(false);
-    
-    if (error) {
-      toast({
-        title: 'Sign up failed',
-        description: error.message.includes('already registered')
-          ? 'This email is already registered. Please sign in instead.'
-          : error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Account created!',
-        description: 'You can now sign in with your credentials.',
       });
     }
   };
@@ -142,99 +111,45 @@ export default function Auth() {
         <Card className="w-full max-w-md shadow-xl border-border/50">
           <CardHeader className="text-center pb-2">
             <div className="lg:hidden flex items-center justify-center mb-4">
-              <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto" />
+              <img src={wondersLogo} alt="Wonders M Ltd" className="h-12 w-auto rounded-lg" />
             </div>
-            <CardTitle className="text-2xl font-display">Welcome</CardTitle>
+            <CardTitle className="text-2xl font-display">Welcome Back</CardTitle>
             <CardDescription>Sign in to access your dashboard</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={errors.email ? 'border-destructive' : ''}
-                    />
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={errors.password ? 'border-destructive' : ''}
-                    />
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className={errors.fullName ? 'border-destructive' : ''}
-                    />
-                    {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={errors.email ? 'border-destructive' : ''}
-                    />
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={errors.password ? 'border-destructive' : ''}
-                    />
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    New accounts start as Sales Agent. Contact admin for role changes.
-                  </p>
-                </form>
-              </TabsContent>
-            </Tabs>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={errors.email ? 'border-destructive' : ''}
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={errors.password ? 'border-destructive' : ''}
+                />
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign In
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Contact your Super Agent administrator for account access.
+              </p>
+            </form>
           </CardContent>
         </Card>
       </div>
