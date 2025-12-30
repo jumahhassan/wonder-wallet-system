@@ -10,7 +10,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Transaction, Profile, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
 
 interface Stats {
-  companyBalance: number;
+  companyBalanceUSD: number;
+  companyBalanceSSP: number;
   transactionsToday: number;
   pendingApprovals: number;
   escalatedRequests: number;
@@ -21,7 +22,8 @@ interface Stats {
 
 export default function SuperAgentDashboard() {
   const [stats, setStats] = useState<Stats>({
-    companyBalance: 0,
+    companyBalanceUSD: 0,
+    companyBalanceSSP: 0,
     transactionsToday: 0,
     pendingApprovals: 0,
     escalatedRequests: 0,
@@ -56,7 +58,8 @@ export default function SuperAgentDashboard() {
       .from('wallets')
       .select('balance, currency');
     
-    const companyBalance = wallets?.reduce((sum, w) => sum + Number(w.balance), 0) || 0;
+    const companyBalanceUSD = wallets?.filter(w => w.currency === 'USD').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
+    const companyBalanceSSP = wallets?.filter(w => w.currency === 'SSP').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     
     // Fetch today's transactions
     const today = new Date().toISOString().split('T')[0];
@@ -100,7 +103,8 @@ export default function SuperAgentDashboard() {
       .limit(5);
     
     setStats({
-      companyBalance,
+      companyBalanceUSD,
+      companyBalanceSSP,
       transactionsToday: todayTx?.length || 0,
       pendingApprovals: pendingTx?.length || 0,
       escalatedRequests: escalatedTx?.length || 0,
@@ -137,7 +141,8 @@ export default function SuperAgentDashboard() {
   };
 
   const statCards = [
-    { title: 'Total Company Balance', value: `$${stats.companyBalance.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
+    { title: 'Company Balance (USD)', value: `$${stats.companyBalanceUSD.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
+    { title: 'Company Balance (SSP)', value: `SSP ${stats.companyBalanceSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
     { title: 'Transactions Today', value: stats.transactionsToday, icon: <TrendingUp className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Pending Approvals', value: stats.pendingApprovals, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
     { title: 'Escalated Requests', value: stats.escalatedRequests, icon: <AlertTriangle className="w-5 h-5" />, color: 'text-orange-500', bg: 'bg-orange-500/10' },

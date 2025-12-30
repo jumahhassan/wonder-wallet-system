@@ -10,8 +10,10 @@ import { Transaction, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/
 interface Stats {
   pendingRequests: number;
   approvedToday: number;
-  totalValueProcessed: number;
-  agentFloatStatus: number;
+  totalValueProcessedUSD: number;
+  totalValueProcessedSSP: number;
+  agentFloatStatusUSD: number;
+  agentFloatStatusSSP: number;
 }
 
 export default function SalesAssistantDashboard() {
@@ -19,8 +21,10 @@ export default function SalesAssistantDashboard() {
   const [stats, setStats] = useState<Stats>({
     pendingRequests: 0,
     approvedToday: 0,
-    totalValueProcessed: 0,
-    agentFloatStatus: 0,
+    totalValueProcessedUSD: 0,
+    totalValueProcessedSSP: 0,
+    agentFloatStatusUSD: 0,
+    agentFloatStatusSSP: 0,
   });
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,23 +63,27 @@ export default function SalesAssistantDashboard() {
     // Fetch total processed value
     const { data: allApproved } = await supabase
       .from('transactions')
-      .select('amount')
+      .select('amount, currency')
       .eq('approval_status', 'approved');
     
-    const totalValue = allApproved?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+    const totalValueUSD = allApproved?.filter(t => t.currency === 'USD').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+    const totalValueSSP = allApproved?.filter(t => t.currency === 'SSP').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
     
     // Fetch float allocations
     const { data: floats } = await supabase
       .from('float_allocations')
-      .select('amount');
+      .select('amount, currency');
     
-    const totalFloat = floats?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const totalFloatUSD = floats?.filter(f => f.currency === 'USD').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    const totalFloatSSP = floats?.filter(f => f.currency === 'SSP').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
     
     setStats({
       pendingRequests: pendingTx?.length || 0,
       approvedToday: approvedTx?.length || 0,
-      totalValueProcessed: totalValue,
-      agentFloatStatus: totalFloat,
+      totalValueProcessedUSD: totalValueUSD,
+      totalValueProcessedSSP: totalValueSSP,
+      agentFloatStatusUSD: totalFloatUSD,
+      agentFloatStatusSSP: totalFloatSSP,
     });
     
     setPendingTransactions((pendingTx as Transaction[])?.slice(0, 5) || []);
@@ -85,8 +93,10 @@ export default function SalesAssistantDashboard() {
   const statCards = [
     { title: 'Pending Requests', value: stats.pendingRequests, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
     { title: 'Approved Today', value: stats.approvedToday, icon: <CheckCircle className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
-    { title: 'Total Value Processed', value: `$${stats.totalValueProcessed.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
-    { title: 'Agent Float Status', value: `$${stats.agentFloatStatus.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
+    { title: 'Value Processed (USD)', value: `$${stats.totalValueProcessedUSD.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'Value Processed (SSP)', value: `SSP ${stats.totalValueProcessedSSP.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'Agent Float (USD)', value: `$${stats.agentFloatStatusUSD.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
+    { title: 'Agent Float (SSP)', value: `SSP ${stats.agentFloatStatusSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
   ];
 
   return (
@@ -103,7 +113,7 @@ export default function SalesAssistantDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => i === 0 && navigate('/sales-requests')}>
             <CardContent className="p-6">

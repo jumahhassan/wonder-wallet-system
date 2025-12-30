@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { Transaction, Wallet as WalletType, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
 
 interface Stats {
-  availableFloat: number;
+  availableFloatUSD: number;
+  availableFloatSSP: number;
   salesToday: number;
   commissionEarned: number;
   pendingRequests: number;
@@ -19,7 +20,8 @@ export default function SalesAgentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({
-    availableFloat: 0,
+    availableFloatUSD: 0,
+    availableFloatSSP: 0,
     salesToday: 0,
     commissionEarned: 0,
     pendingRequests: 0,
@@ -53,7 +55,8 @@ export default function SalesAgentDashboard() {
       .select('*')
       .eq('user_id', user.id);
     
-    const totalBalance = userWallets?.reduce((sum, w) => sum + Number(w.balance), 0) || 0;
+    const floatUSD = userWallets?.filter(w => w.currency === 'USD').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
+    const floatSSP = userWallets?.filter(w => w.currency === 'SSP').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     setWallets((userWallets as WalletType[]) || []);
     
     // Fetch today's sales
@@ -89,7 +92,8 @@ export default function SalesAgentDashboard() {
       .limit(5);
     
     setStats({
-      availableFloat: totalBalance,
+      availableFloatUSD: floatUSD,
+      availableFloatSSP: floatSSP,
       salesToday: todaySales?.length || 0,
       commissionEarned: totalCommission,
       pendingRequests: pendingTx?.length || 0,
@@ -100,7 +104,8 @@ export default function SalesAgentDashboard() {
   };
 
   const statCards = [
-    { title: 'Available Float', value: `$${stats.availableFloat.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'Float (USD)', value: `$${stats.availableFloatUSD.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'Float (SSP)', value: `SSP ${stats.availableFloatSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Sales Made Today', value: stats.salesToday, icon: <TrendingUp className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
     { title: 'Commission Earned', value: `$${stats.commissionEarned.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
     { title: 'Pending Requests', value: stats.pendingRequests, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
@@ -120,7 +125,7 @@ export default function SalesAgentDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((stat, i) => (
           <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
