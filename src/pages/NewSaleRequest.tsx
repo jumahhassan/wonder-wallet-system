@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,8 +15,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Send, Smartphone, Wallet, Globe } from 'lucide-react';
+import { Loader2, Send, Smartphone, Wallet, Globe, AlertTriangle } from 'lucide-react';
 import { TRANSACTION_TYPE_LABELS, TransactionType, CurrencyCode } from '@/types/database';
+import { 
+  MobileOperator, 
+  MOBILE_OPERATORS, 
+  validatePhonePrefixRealtime, 
+  isPhoneComplete,
+  OPERATOR_PREFIXES 
+} from '@/lib/phoneValidation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const serviceIcons: Record<TransactionType, React.ReactNode> = {
   airtime: <Smartphone className="w-5 h-5" />,
@@ -38,15 +46,27 @@ export default function NewSaleRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
     serviceType: '' as TransactionType | '',
     amount: '',
-    currency: 'USD' as CurrencyCode,
+    currency: 'SSP' as CurrencyCode, // Default to SSP for airtime
     destination: '',
     notes: '',
+    mobileOperator: '' as MobileOperator | '',
   });
+
+  // Real-time phone validation when operator is selected
+  useEffect(() => {
+    if (formData.serviceType === 'airtime' && formData.mobileOperator && formData.clientPhone) {
+      const validation = validatePhonePrefixRealtime(formData.clientPhone, formData.mobileOperator as MobileOperator);
+      setPhoneWarning(validation.warning || null);
+    } else {
+      setPhoneWarning(null);
+    }
+  }, [formData.clientPhone, formData.mobileOperator, formData.serviceType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,9 +76,24 @@ export default function NewSaleRequest() {
       return;
     }
 
+    // Validate mobile operator for airtime
+    if (formData.serviceType === 'airtime' && !formData.mobileOperator) {
+      toast.error('Please select a mobile operator');
+      return;
+    }
+
     if (!formData.clientPhone.trim()) {
       toast.error('Please enter client phone number');
       return;
+    }
+
+    // Validate phone number format for airtime
+    if (formData.serviceType === 'airtime' && formData.mobileOperator) {
+      if (!isPhoneComplete(formData.clientPhone, formData.mobileOperator as MobileOperator)) {
+        const { local, international } = OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator];
+        toast.error(`Please enter a valid ${MOBILE_OPERATORS.find(o => o.value === formData.mobileOperator)?.label} number (${local}XXXXXXX or ${international}XXXXXXX)`);
+        return;
+      }
     }
 
     const amount = parseFloat(formData.amount);
@@ -85,6 +120,7 @@ export default function NewSaleRequest() {
           metadata: {
             destination: formData.destination.trim() || undefined,
             notes: formData.notes.trim() || undefined,
+            mobile_operator: formData.serviceType === 'airtime' ? formData.mobileOperator : undefined,
           },
         },
       });
@@ -108,7 +144,42 @@ export default function NewSaleRequest() {
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Reset phone number and operator when service type changes
+      if (field === 'serviceType') {
+        newData.clientPhone = '';
+        newData.mobileOperator = '';
+        setPhoneWarning(null);
+      }
+      
+      // Reset phone number when operator changes
+      if (field === 'mobileOperator') {
+        newData.clientPhone = '';
+        setPhoneWarning(null);
+      }
+      
+      return newData;
+    });
+  };
+
+  const handlePhoneChange = (value: string) => {
+    // Only allow digits, +, and spaces
+    const cleanValue = value.replace(/[^\d+\s-]/g, '');
+    
+    // If operator is selected and airtime, validate in real-time
+    if (formData.serviceType === 'airtime' && formData.mobileOperator) {
+      const validation = validatePhonePrefixRealtime(cleanValue, formData.mobileOperator as MobileOperator);
+      
+      if (!validation.valid && cleanValue.length > 0) {
+        // Don't update the phone if validation fails - block input
+        setPhoneWarning(validation.warning || null);
+        return;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, clientPhone: cleanValue }));
   };
 
   return (
@@ -150,6 +221,36 @@ export default function NewSaleRequest() {
               </Select>
             </div>
 
+            {/* Mobile Operator Selection (only for airtime) */}
+            {formData.serviceType === 'airtime' && (
+              <div className="space-y-2">
+                <Label htmlFor="mobileOperator">Mobile Operator *</Label>
+                <Select
+                  value={formData.mobileOperator}
+                  onValueChange={(value) => handleChange('mobileOperator', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select operator..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOBILE_OPERATORS.map((operator) => (
+                      <SelectItem key={operator.value} value={operator.value}>
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4" />
+                          {operator.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.mobileOperator && (
+                  <p className="text-xs text-muted-foreground">
+                    {MOBILE_OPERATORS.find(o => o.value === formData.mobileOperator)?.label} numbers: {OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].local}XXXXXXX or {OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].international}XXXXXXX
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Client Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -165,13 +266,30 @@ export default function NewSaleRequest() {
                 <Label htmlFor="clientPhone">Client Phone *</Label>
                 <Input
                   id="clientPhone"
-                  placeholder="+211 XXX XXX XXX"
+                  placeholder={
+                    formData.serviceType === 'airtime' && formData.mobileOperator
+                      ? `${OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].local}XXXXXXX`
+                      : '+211 XXX XXX XXX'
+                  }
                   value={formData.clientPhone}
-                  onChange={(e) => handleChange('clientPhone', e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  disabled={formData.serviceType === 'airtime' && !formData.mobileOperator}
                   required
+                  className={phoneWarning ? 'border-destructive' : ''}
                 />
+                {formData.serviceType === 'airtime' && !formData.mobileOperator && (
+                  <p className="text-xs text-muted-foreground">Please select a mobile operator first</p>
+                )}
               </div>
             </div>
+
+            {/* Phone Validation Warning */}
+            {phoneWarning && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{phoneWarning}</AlertDescription>
+              </Alert>
+            )}
 
             {/* Amount */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
