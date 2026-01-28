@@ -33,13 +33,16 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Search, Edit, UserPlus, Loader2 } from 'lucide-react';
+import { Search, Edit, UserPlus, Loader2, Upload, X, Image, FileText } from 'lucide-react';
 import { Profile, AppRole, ROLE_LABELS } from '@/types/database';
 import TablePagination from '@/components/TablePagination';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
 
 interface UserWithRole extends Profile {
   role: AppRole;
+  photo_url?: string | null;
+  national_id_url?: string | null;
 }
 
 const createUserSchema = z.object({
@@ -72,6 +75,13 @@ export default function UsersManagement() {
     role: 'sales_agent' as AppRole,
   });
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
+  
+  // Photo/ID upload state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [idFileName, setIdFileName] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -87,7 +97,9 @@ export default function UsersManagement() {
         const userRole = roles.find(r => r.user_id === profile.id);
         return {
           ...profile,
-          role: (userRole?.role as AppRole) || 'sales_agent'
+          role: (userRole?.role as AppRole) || 'sales_agent',
+          photo_url: (profile as any).photo_url || null,
+          national_id_url: (profile as any).national_id_url || null,
         };
       });
       setUsers(usersWithRoles);
@@ -131,11 +143,71 @@ export default function UsersManagement() {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'Error', description: 'Photo must be less than 5MB', variant: 'destructive' });
+        return;
+      }
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'Error', description: 'File must be less than 5MB', variant: 'destructive' });
+        return;
+      }
+      setIdFile(file);
+      setIdFileName(file.name);
+    }
+  };
+
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('agent-documents')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('agent-documents')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
   const handleCreateUser = async () => {
     if (!validateCreateForm()) return;
     
     setCreating(true);
     try {
+      // First upload files if any
+      let photoUrl: string | null = null;
+      let nationalIdUrl: string | null = null;
+
+      if (photoFile || idFile) {
+        setUploadingFiles(true);
+        if (photoFile) {
+          photoUrl = await uploadFile(photoFile, 'photos');
+        }
+        if (idFile) {
+          nationalIdUrl = await uploadFile(idFile, 'national-ids');
+        }
+        setUploadingFiles(false);
+      }
+
       const response = await supabase.functions.invoke('create-user', {
         body: {
           email: newUser.email,
@@ -143,6 +215,8 @@ export default function UsersManagement() {
           fullName: newUser.fullName,
           phone: newUser.phone || undefined,
           role: newUser.role,
+          photoUrl,
+          nationalIdUrl,
         },
       });
 
@@ -160,7 +234,7 @@ export default function UsersManagement() {
       });
       
       setCreateDialogOpen(false);
-      setNewUser({ email: '', password: '', fullName: '', phone: '', role: 'sales_agent' });
+      resetCreateForm();
       fetchUsers();
     } catch (error: any) {
       toast({ 
@@ -170,7 +244,17 @@ export default function UsersManagement() {
       });
     } finally {
       setCreating(false);
+      setUploadingFiles(false);
     }
+  };
+
+  const resetCreateForm = () => {
+    setNewUser({ email: '', password: '', fullName: '', phone: '', role: 'sales_agent' });
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setIdFile(null);
+    setIdFileName(null);
+    setCreateErrors({});
   };
 
   const filteredUsers = users.filter(user => {
@@ -205,7 +289,7 @@ export default function UsersManagement() {
               Register New User
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Register New User</DialogTitle>
               <DialogDescription>
@@ -274,14 +358,87 @@ export default function UsersManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Photo Upload */}
+              <div className="space-y-2">
+                <Label>Photo (optional)</Label>
+                {photoPreview ? (
+                  <div className="relative w-20 h-20">
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={() => {
+                        setPhotoFile(null);
+                        setPhotoPreview(null);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <span className="text-sm text-muted-foreground">Click to upload photo</span>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</p>
+              </div>
+
+              {/* National ID Upload */}
+              <div className="space-y-2">
+                <Label>National ID (optional)</Label>
+                {idFileName ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/50">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm truncate flex-1">{idFileName}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        setIdFile(null);
+                        setIdFileName(null);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                    <span className="text-sm text-muted-foreground">Click to upload ID</span>
+                    <Input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleIdChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG/PDF</p>
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => { setCreateDialogOpen(false); resetCreateForm(); }} disabled={creating}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateUser} disabled={creating}>
-                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create User
+              <Button onClick={handleCreateUser} disabled={creating || uploadingFiles}>
+                {(creating || uploadingFiles) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {uploadingFiles ? 'Uploading...' : 'Create User'}
               </Button>
             </DialogFooter>
           </DialogContent>

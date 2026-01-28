@@ -22,6 +22,7 @@ import NewSaleRequest from "./pages/NewSaleRequest";
 import MyTransactions from "./pages/MyTransactions";
 import MyCommission from "./pages/MyCommission";
 import MyClients from "./pages/MyClients";
+import SimCardManagement from "./pages/SimCardManagement";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/sales-requests" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><SalesRequests /></ProtectedPage>} />
             <Route path="/escalated-requests" element={<ProtectedPage allowedRoles={['super_agent']}><EscalatedRequests /></ProtectedPage>} />
             <Route path="/agents" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><AgentsManagement /></ProtectedPage>} />
+            <Route path="/sim-cards" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><SimCardManagement /></ProtectedPage>} />
             <Route path="/new-sale" element={<ProtectedPage allowedRoles={['sales_agent']}><NewSaleRequest /></ProtectedPage>} />
             <Route path="/my-transactions" element={<ProtectedPage allowedRoles={['sales_agent']}><MyTransactions /></ProtectedPage>} />
             <Route path="/my-commission" element={<ProtectedPage allowedRoles={['sales_agent']}><MyCommission /></ProtectedPage>} />
