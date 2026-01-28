@@ -12,6 +12,8 @@ interface CreateUserRequest {
   fullName: string;
   phone?: string;
   role: "super_agent" | "sales_assistant" | "sales_agent";
+  photoUrl?: string;
+  nationalIdUrl?: string;
 }
 
 serve(async (req) => {
@@ -71,7 +73,7 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { email, password, fullName, phone, role }: CreateUserRequest = await req.json();
+    const { email, password, fullName, phone, role, photoUrl, nationalIdUrl }: CreateUserRequest = await req.json();
 
     // Validate input
     if (!email || !password || !fullName || !role) {
@@ -80,6 +82,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("Creating user:", { email, fullName, role, hasPhoto: !!photoUrl, hasNationalId: !!nationalIdUrl });
 
     // Create the new user using admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -109,15 +113,20 @@ serve(async (req) => {
       }
     }
 
-    // Update phone number if provided
-    if (phone) {
-      const { error: phoneError } = await supabaseAdmin
+    // Update profile with phone, photo_url, and national_id_url if provided
+    const profileUpdates: Record<string, string> = {};
+    if (phone) profileUpdates.phone = phone;
+    if (photoUrl) profileUpdates.photo_url = photoUrl;
+    if (nationalIdUrl) profileUpdates.national_id_url = nationalIdUrl;
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: profileError } = await supabaseAdmin
         .from("profiles")
-        .update({ phone })
+        .update(profileUpdates)
         .eq("id", newUser.user.id);
 
-      if (phoneError) {
-        console.error("Error updating phone:", phoneError);
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
       }
     }
 

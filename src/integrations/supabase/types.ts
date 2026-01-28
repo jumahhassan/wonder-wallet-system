@@ -149,7 +149,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          national_id_url: string | null
           phone: string | null
+          photo_url: string | null
           updated_at: string
         }
         Insert: {
@@ -157,7 +159,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          national_id_url?: string | null
           phone?: string | null
+          photo_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -165,8 +169,70 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          national_id_url?: string | null
           phone?: string | null
+          photo_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sim_card_inventory: {
+        Row: {
+          allocated_by: string | null
+          allocated_to: string
+          allocation_date: string
+          created_at: string
+          id: string
+          notes: string | null
+          quantity: number
+        }
+        Insert: {
+          allocated_by?: string | null
+          allocated_to: string
+          allocation_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity: number
+        }
+        Update: {
+          allocated_by?: string | null
+          allocated_to?: string
+          allocation_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+        }
+        Relationships: []
+      }
+      sim_card_sales: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          quantity_sold: number
+          recorded_by: string | null
+          sale_date: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity_sold: number
+          recorded_by?: string | null
+          sale_date?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity_sold?: number
+          recorded_by?: string | null
+          sale_date?: string
         }
         Relationships: []
       }

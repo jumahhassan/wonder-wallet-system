@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Menu,
   X,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
@@ -56,6 +57,7 @@ const navItems: NavItem[] = [
   // Sales Assistant menu
   { label: 'Sales Requests', href: '/sales-requests', icon: <CheckSquare className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Agents', href: '/agents', icon: <Users className="w-5 h-5" />, roles: ['sales_assistant'] },
+  { label: 'SIM Cards', href: '/sim-cards', icon: <CreditCard className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['sales_assistant'] },
   // Sales Agent menu

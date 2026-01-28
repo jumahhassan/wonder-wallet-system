@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, CheckCircle, DollarSign, Users, Wallet, Eye } from 'lucide-react';
+import { Clock, CheckCircle, DollarSign, Users, Wallet, Eye, CreditCard, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Transaction, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
+import { format } from 'date-fns';
 
 interface Stats {
   pendingRequests: number;
@@ -14,6 +15,8 @@ interface Stats {
   totalValueProcessedSSP: number;
   agentFloatStatusUSD: number;
   agentFloatStatusSSP: number;
+  simAllocatedToday: number;
+  simSoldToday: number;
 }
 
 export default function SalesAssistantDashboard() {
@@ -25,6 +28,8 @@ export default function SalesAssistantDashboard() {
     totalValueProcessedSSP: 0,
     agentFloatStatusUSD: 0,
     agentFloatStatusSSP: 0,
+    simAllocatedToday: 0,
+    simSoldToday: 0,
   });
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +82,22 @@ export default function SalesAssistantDashboard() {
     const totalFloatUSD = floats?.filter(f => f.currency === 'USD').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
     const totalFloatSSP = floats?.filter(f => f.currency === 'SSP').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
     
+    // Fetch SIM card stats for today
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    
+    const { data: simAllocations } = await supabase
+      .from('sim_card_inventory')
+      .select('quantity')
+      .eq('allocation_date', todayStr);
+    
+    const { data: simSales } = await supabase
+      .from('sim_card_sales')
+      .select('quantity_sold')
+      .eq('sale_date', todayStr);
+    
+    const simAllocatedToday = simAllocations?.reduce((sum, s) => sum + s.quantity, 0) || 0;
+    const simSoldToday = simSales?.reduce((sum, s) => sum + s.quantity_sold, 0) || 0;
+    
     setStats({
       pendingRequests: pendingTx?.length || 0,
       approvedToday: approvedTx?.length || 0,
@@ -84,6 +105,8 @@ export default function SalesAssistantDashboard() {
       totalValueProcessedSSP: totalValueSSP,
       agentFloatStatusUSD: totalFloatUSD,
       agentFloatStatusSSP: totalFloatSSP,
+      simAllocatedToday,
+      simSoldToday,
     });
     
     setPendingTransactions((pendingTx as Transaction[])?.slice(0, 5) || []);
@@ -97,6 +120,8 @@ export default function SalesAssistantDashboard() {
     { title: 'Value Processed (SSP)', value: `SSP ${stats.totalValueProcessedSSP.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Agent Float (USD)', value: `$${stats.agentFloatStatusUSD.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
     { title: 'Agent Float (SSP)', value: `SSP ${stats.agentFloatStatusSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
+    { title: 'SIMs Given Today', value: stats.simAllocatedToday, icon: <CreditCard className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
+    { title: 'SIMs Sold Today', value: stats.simSoldToday, icon: <Smartphone className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
   ];
 
   return (
@@ -106,23 +131,34 @@ export default function SalesAssistantDashboard() {
           <h1 className="text-2xl md:text-3xl font-display font-bold">Operations Dashboard</h1>
           <p className="text-sm md:text-base text-muted-foreground">Manage sales requests and agent operations</p>
         </div>
-        <Button onClick={() => navigate('/sales-requests')} className="gap-2 w-full sm:w-auto">
-          <Eye className="w-4 h-4" />
-          View All Requests
-        </Button>
+        <div className="flex flex-col xs:flex-row gap-2">
+          <Button onClick={() => navigate('/sales-requests')} className="gap-2">
+            <Eye className="w-4 h-4" />
+            <span className="hidden xs:inline">View Requests</span>
+            <span className="xs:hidden">Requests</span>
+          </Button>
+          <Button onClick={() => navigate('/sim-cards')} variant="outline" className="gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="hidden xs:inline">SIM Cards</span>
+            <span className="xs:hidden">SIMs</span>
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
-          <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => i === 0 && navigate('/sales-requests')}>
-            <CardContent className="p-3 md:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => {
+            if (i === 0) navigate('/sales-requests');
+            if (i === 6 || i === 7) navigate('/sim-cards');
+          }}>
+            <CardContent className="p-3 md:p-4">
+              <div className="flex flex-col gap-2">
+                <div className={`p-2 rounded-full ${stat.bg} ${stat.color} self-start shrink-0`}>{stat.icon}</div>
                 <div className="min-w-0">
-                  <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.title}</p>
-                  <p className="text-lg md:text-2xl font-bold mt-1 truncate">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-lg md:text-xl font-bold mt-1 truncate">{stat.value}</p>
                 </div>
-                <div className={`p-2 md:p-3 rounded-full ${stat.bg} ${stat.color} self-start sm:self-auto shrink-0`}>{stat.icon}</div>
               </div>
             </CardContent>
           </Card>
