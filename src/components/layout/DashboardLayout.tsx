@@ -32,6 +32,10 @@ import {
   Menu,
   X,
   CreditCard,
+  DollarSign,
+  Receipt,
+  PiggyBank,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
@@ -65,6 +69,14 @@ const navItems: NavItem[] = [
   { label: 'My Transactions', href: '/my-transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_agent'] },
   { label: 'My Commission', href: '/my-commission', icon: <Wallet className="w-5 h-5" />, roles: ['sales_agent'] },
   { label: 'My Clients', href: '/my-clients', icon: <Users className="w-5 h-5" />, roles: ['sales_agent'] },
+  // HR/Finance menu
+  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Employees', href: '/hr/employees', icon: <Users className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Payroll', href: '/hr/payroll', icon: <DollarSign className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Allocations', href: '/hr/allocations', icon: <CreditCard className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Expenses', href: '/hr/expenses', icon: <Receipt className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Advances', href: '/hr/advances', icon: <PiggyBank className="w-5 h-5" />, roles: ['hr_finance'] },
+  { label: 'Transactions', href: '/hr/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['hr_finance'] },
 ];
 
 interface DashboardLayoutProps {

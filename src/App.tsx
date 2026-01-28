@@ -23,10 +23,16 @@ import MyTransactions from "./pages/MyTransactions";
 import MyCommission from "./pages/MyCommission";
 import MyClients from "./pages/MyClients";
 import SimCardManagement from "./pages/SimCardManagement";
+// HR/Finance pages
+import HREmployees from "./pages/hr/Employees";
+import HRPayroll from "./pages/hr/Payroll";
+import HRAllocations from "./pages/hr/Allocations";
+import HRExpenses from "./pages/hr/Expenses";
+import HRAdvances from "./pages/hr/Advances";
 
 const queryClient = new QueryClient();
 
-const ProtectedPage = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ('super_agent' | 'sales_assistant' | 'sales_agent')[] }) => (
+const ProtectedPage = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ('super_agent' | 'sales_assistant' | 'sales_agent' | 'hr_finance')[] }) => (
   <ProtectedRoute allowedRoles={allowedRoles}>
     <DashboardLayout>{children}</DashboardLayout>
   </ProtectedRoute>
@@ -57,6 +63,13 @@ const App = () => (
             <Route path="/my-transactions" element={<ProtectedPage allowedRoles={['sales_agent']}><MyTransactions /></ProtectedPage>} />
             <Route path="/my-commission" element={<ProtectedPage allowedRoles={['sales_agent']}><MyCommission /></ProtectedPage>} />
             <Route path="/my-clients" element={<ProtectedPage allowedRoles={['sales_agent']}><MyClients /></ProtectedPage>} />
+            {/* HR/Finance routes */}
+            <Route path="/hr/employees" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HREmployees /></ProtectedPage>} />
+            <Route path="/hr/payroll" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HRPayroll /></ProtectedPage>} />
+            <Route path="/hr/allocations" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HRAllocations /></ProtectedPage>} />
+            <Route path="/hr/expenses" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HRExpenses /></ProtectedPage>} />
+            <Route path="/hr/advances" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HRAdvances /></ProtectedPage>} />
+            <Route path="/hr/transactions" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><Transactions /></ProtectedPage>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
