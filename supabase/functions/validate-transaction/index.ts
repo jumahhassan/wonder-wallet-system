@@ -9,9 +9,17 @@ const corsHeaders = {
 // Validation constants
 const VALID_TRANSACTION_TYPES = ['airtime', 'mtn_momo', 'digicash', 'm_gurush', 'mpesa_kenya', 'uganda_mobile_money'];
 const VALID_CURRENCIES = ['USD', 'SSP', 'KES', 'UGX'];
+const VALID_MOBILE_OPERATORS = ['mtn', 'digitel', 'zain'];
 const MAX_AMOUNT = 1000000;
 const MIN_AMOUNT = 0.01;
 const PHONE_REGEX = /^\+?[1-9]\d{1,14}$/;
+
+// Mobile operator phone prefixes (South Sudan)
+const OPERATOR_PREFIXES: Record<string, { local: string; international: string }> = {
+  mtn: { local: '092', international: '+21192' },
+  digitel: { local: '098', international: '+21198' },
+  zain: { local: '091', international: '+21191' },
+};
 
 interface TransactionRequest {
   transaction_type: string;
@@ -22,7 +30,38 @@ interface TransactionRequest {
   metadata?: {
     destination?: string;
     notes?: string;
+    mobile_operator?: string;
   };
+}
+
+// Validate phone number against mobile operator prefix
+function validatePhoneForOperator(phone: string, operator: string): { valid: boolean; error?: string } {
+  const cleanPhone = phone.replace(/[\s-]/g, '');
+  const prefixes = OPERATOR_PREFIXES[operator];
+  
+  if (!prefixes) {
+    return { valid: false, error: `Invalid mobile operator: ${operator}` };
+  }
+  
+  const { local, international } = prefixes;
+  
+  if (cleanPhone.startsWith('+')) {
+    if (!cleanPhone.startsWith(international)) {
+      return { valid: false, error: `Phone number must start with ${local} or ${international} for ${operator.toUpperCase()}` };
+    }
+    if (cleanPhone.length !== 13) {
+      return { valid: false, error: 'International phone number must be 13 characters' };
+    }
+  } else {
+    if (!cleanPhone.startsWith(local)) {
+      return { valid: false, error: `Phone number must start with ${local} or ${international} for ${operator.toUpperCase()}` };
+    }
+    if (cleanPhone.length !== 10) {
+      return { valid: false, error: 'Local phone number must be 10 digits' };
+    }
+  }
+  
+  return { valid: true };
 }
 
 function validateTransactionInput(data: unknown): { valid: boolean; errors: string[]; data?: TransactionRequest } {
@@ -83,6 +122,7 @@ function validateTransactionInput(data: unknown): { valid: boolean; errors: stri
   }
 
   // Validate metadata (optional)
+  let mobileOperator: string | undefined;
   if (req.metadata !== undefined && req.metadata !== null) {
     if (typeof req.metadata !== 'object') {
       errors.push('Metadata must be an object');
@@ -93,6 +133,25 @@ function validateTransactionInput(data: unknown): { valid: boolean; errors: stri
       }
       if (meta.destination && typeof meta.destination === 'string' && meta.destination.length > 100) {
         errors.push('Destination is too long (max 100 characters)');
+      }
+      // Extract mobile operator for airtime validation
+      if (meta.mobile_operator && typeof meta.mobile_operator === 'string') {
+        mobileOperator = meta.mobile_operator;
+      }
+    }
+  }
+
+  // For airtime transactions, validate mobile operator and phone prefix
+  if (req.transaction_type === 'airtime') {
+    if (!mobileOperator) {
+      errors.push('Mobile operator is required for airtime transactions');
+    } else if (!VALID_MOBILE_OPERATORS.includes(mobileOperator)) {
+      errors.push(`Invalid mobile operator. Must be one of: ${VALID_MOBILE_OPERATORS.join(', ')}`);
+    } else if (req.recipient_phone && typeof req.recipient_phone === 'string') {
+      // Validate phone prefix matches selected operator
+      const phoneValidation = validatePhoneForOperator(req.recipient_phone.trim(), mobileOperator);
+      if (!phoneValidation.valid) {
+        errors.push(phoneValidation.error!);
       }
     }
   }
