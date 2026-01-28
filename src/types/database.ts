@@ -1,4 +1,4 @@
-export type AppRole = 'super_agent' | 'sales_assistant' | 'sales_agent' | 'hr_finance';
+export type AppRole = 'super_agent' | 'sales_assistant' | 'sales_agent' | 'hr_finance' | 'marketing';
 export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'failed';
 export type TransactionType = 'airtime' | 'mtn_momo' | 'digicash' | 'm_gurush' | 'mpesa_kenya' | 'uganda_mobile_money';
 export type CurrencyCode = 'USD' | 'SSP' | 'KES' | 'UGX';
@@ -211,6 +211,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   sales_assistant: 'Sales Assistant',
   sales_agent: 'Sales Agent',
   hr_finance: 'HR/Finance',
+  marketing: 'Marketing',
 };
 
 export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {

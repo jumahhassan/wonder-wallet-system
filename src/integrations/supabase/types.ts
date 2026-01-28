@@ -644,7 +644,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_agent" | "sales_assistant" | "sales_agent" | "hr_finance"
+      app_role:
+        | "super_agent"
+        | "sales_assistant"
+        | "sales_agent"
+        | "hr_finance"
+        | "marketing"
       approval_status: "pending" | "approved" | "rejected" | "escalated"
       currency_code: "USD" | "SSP" | "KES" | "UGX"
       transaction_status:
@@ -787,7 +792,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_agent", "sales_assistant", "sales_agent", "hr_finance"],
+      app_role: [
+        "super_agent",
+        "sales_assistant",
+        "sales_agent",
+        "hr_finance",
+        "marketing",
+      ],
       approval_status: ["pending", "approved", "rejected", "escalated"],
       currency_code: ["USD", "SSP", "KES", "UGX"],
       transaction_status: [
