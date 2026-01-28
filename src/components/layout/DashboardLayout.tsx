@@ -36,6 +36,8 @@ import {
   Receipt,
   PiggyBank,
   Building2,
+  Megaphone,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_LABELS, AppRole } from '@/types/database';
@@ -49,7 +51,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent'] },
+  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['super_agent', 'sales_assistant', 'sales_agent', 'marketing'] },
   // Super Agent menu
   { label: 'Users Management', href: '/users', icon: <Users className="w-5 h-5" />, roles: ['super_agent'] },
   { label: 'Wallets & Funds', href: '/wallets', icon: <Wallet className="w-5 h-5" />, roles: ['super_agent'] },
@@ -77,6 +79,10 @@ const navItems: NavItem[] = [
   { label: 'Expenses', href: '/hr/expenses', icon: <Receipt className="w-5 h-5" />, roles: ['hr_finance'] },
   { label: 'Advances', href: '/hr/advances', icon: <PiggyBank className="w-5 h-5" />, roles: ['hr_finance'] },
   { label: 'Transactions', href: '/hr/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['hr_finance'] },
+  // Marketing menu
+  { label: 'Analytics', href: '/marketing/analytics', icon: <BarChart3 className="w-5 h-5" />, roles: ['marketing'] },
+  { label: 'Campaigns', href: '/marketing/campaigns', icon: <Megaphone className="w-5 h-5" />, roles: ['marketing'] },
+  { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['marketing'] },
 ];
 
 interface DashboardLayoutProps {

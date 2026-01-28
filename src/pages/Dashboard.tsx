@@ -3,6 +3,7 @@ import HRFinanceDashboard from './dashboard/HRFinanceDashboard';
 import SalesAssistantDashboard from './dashboard/SalesAssistantDashboard';
 import SalesAgentDashboard from './dashboard/SalesAgentDashboard';
 import SuperAgentDashboard from './dashboard/SuperAgentDashboard';
+import MarketingDashboard from './dashboard/MarketingDashboard';
 import { Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -26,6 +27,8 @@ export default function Dashboard() {
       return <SalesAgentDashboard />;
     case 'super_agent':
       return <SuperAgentDashboard />;
+    case 'marketing':
+      return <MarketingDashboard />;
     default:
       return <SuperAgentDashboard />;
   }
