@@ -165,6 +165,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" />
+              Edit Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
