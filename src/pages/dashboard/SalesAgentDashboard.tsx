@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Wallet, TrendingUp, Clock, DollarSign, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Transaction, Wallet as WalletType, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
+import CommissionTierCard from '@/components/dashboard/CommissionTierCard';
 
 interface Stats {
   availableFloatUSD: number;
@@ -14,6 +15,7 @@ interface Stats {
   salesToday: number;
   commissionEarned: number;
   pendingRequests: number;
+  cumulativeAirtimeVolumeSSP: number;
 }
 
 export default function SalesAgentDashboard() {
@@ -25,6 +27,7 @@ export default function SalesAgentDashboard() {
     salesToday: 0,
     commissionEarned: 0,
     pendingRequests: 0,
+    cumulativeAirtimeVolumeSSP: 0,
   });
   const [wallets, setWallets] = useState<WalletType[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
@@ -77,11 +80,16 @@ export default function SalesAgentDashboard() {
     // Fetch commission
     const { data: approvedTx } = await supabase
       .from('transactions')
-      .select('commission_amount')
+      .select('commission_amount, transaction_type, amount, currency')
       .eq('agent_id', user.id)
       .eq('approval_status', 'approved');
     
     const totalCommission = approvedTx?.reduce((sum, t) => sum + Number(t.commission_amount || 0), 0) || 0;
+    
+    // Calculate cumulative SSP airtime volume for commission tier
+    const cumulativeAirtimeSSP = approvedTx
+      ?.filter(t => t.transaction_type === 'airtime' && t.currency === 'SSP')
+      ?.reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0;
     
     // Fetch recent transactions
     const { data: recentTx } = await supabase
@@ -97,6 +105,7 @@ export default function SalesAgentDashboard() {
       salesToday: todaySales?.length || 0,
       commissionEarned: totalCommission,
       pendingRequests: pendingTx?.length || 0,
+      cumulativeAirtimeVolumeSSP: cumulativeAirtimeSSP,
     });
     
     setRecentTransactions((recentTx as Transaction[]) || []);
@@ -141,24 +150,30 @@ export default function SalesAgentDashboard() {
         ))}
       </div>
 
-      {/* Wallet Balances */}
-      <Card>
-        <CardHeader className="pb-2 md:pb-4">
-          <CardTitle className="text-base md:text-lg">Your Wallets</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-            {wallets.map((wallet) => (
-              <div key={wallet.id} className="p-3 md:p-4 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs md:text-sm text-muted-foreground">{wallet.currency}</p>
-                <p className="text-base md:text-xl font-bold mt-1 truncate">
-                  {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Commission Tier & Wallet Balances */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Commission Tier Card */}
+        <CommissionTierCard cumulativeVolumeSSP={stats.cumulativeAirtimeVolumeSSP} />
+        
+        {/* Wallet Balances */}
+        <Card>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-base md:text-lg">Your Wallets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {wallets.map((wallet) => (
+                <div key={wallet.id} className="p-3 md:p-4 rounded-lg bg-muted/50 text-center">
+                  <p className="text-xs md:text-sm text-muted-foreground">{wallet.currency}</p>
+                  <p className="text-base md:text-xl font-bold mt-1 truncate">
+                    {CURRENCY_SYMBOLS[wallet.currency]}{Number(wallet.balance).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Recent Transactions */}
       <Card>
