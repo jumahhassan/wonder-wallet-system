@@ -1,8 +1,9 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -95,6 +96,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('photo_url, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setProfilePhoto(data.photo_url);
+        setProfileName(data.full_name);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   const filteredNavItems = navItems.filter((item) => role && item.roles.includes(role));
 
@@ -103,7 +125,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     navigate('/auth');
   };
 
-  const getInitials = (email: string) => {
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
     return email.substring(0, 2).toUpperCase();
   };
 
@@ -148,13 +173,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <DropdownMenuTrigger asChild>
             <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
               <Avatar className="h-9 w-9">
+                <AvatarImage src={profilePhoto || undefined} alt={profileName || 'Profile'} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {user?.email ? getInitials(user.email) : 'U'}
+                  {user?.email ? getInitials(profileName, user.email) : 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {user?.email}
+                  {profileName || user?.email}
                 </p>
                 <p className="text-xs text-sidebar-foreground/60">
                   {role ? ROLE_LABELS[role] : 'Loading...'}
