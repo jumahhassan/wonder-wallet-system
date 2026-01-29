@@ -297,9 +297,13 @@ export default function NewSaleRequest() {
                 <Input
                   id="recipientPhone"
                   placeholder={
-                    formData.serviceType === 'airtime' && formData.mobileOperator
-                      ? `${OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].local}XXXXXXX`
-                      : '+211 XXX XXX XXX'
+                    formData.serviceType === 'mpesa_kenya'
+                      ? '+254 XXX XXX XXX'
+                      : formData.serviceType === 'uganda_mobile_money'
+                        ? '+256 XXX XXX XXX'
+                        : formData.serviceType === 'airtime' && formData.mobileOperator
+                          ? `${OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].local}XXXXXXX`
+                          : '+211 XXX XXX XXX'
                   }
                   value={formData.recipientPhone}
                   onChange={(e) => handleRecipientPhoneChange(e.target.value)}
