@@ -50,7 +50,7 @@ const createUserSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   phone: z.string().optional(),
-  role: z.enum(['super_agent', 'sales_assistant', 'sales_agent']),
+  role: z.enum(['super_agent', 'sales_assistant', 'sales_agent', 'hr_finance', 'marketing']),
 });
 
 export default function UsersManagement() {
@@ -271,7 +271,10 @@ export default function UsersManagement() {
     switch (role) {
       case 'super_agent': return 'default';
       case 'sales_assistant': return 'secondary';
+      case 'hr_finance': return 'default';
+      case 'marketing': return 'secondary';
       case 'sales_agent': return 'outline';
+      default: return 'outline';
     }
   };
 
@@ -351,10 +354,12 @@ export default function UsersManagement() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
                     <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
                     <SelectItem value="sales_agent">Sales Agent</SelectItem>
+                    <SelectItem value="hr_finance">HR/Finance</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -467,6 +472,8 @@ export default function UsersManagement() {
                 <SelectItem value="super_agent">Super Agent</SelectItem>
                 <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
                 <SelectItem value="sales_agent">Sales Agent</SelectItem>
+                <SelectItem value="hr_finance">HR/Finance</SelectItem>
+                <SelectItem value="marketing">Marketing</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -540,6 +547,8 @@ export default function UsersManagement() {
                                           <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
                                           <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
                                           <SelectItem value="sales_agent">Sales Agent</SelectItem>
+                                          <SelectItem value="hr_finance">HR/Finance</SelectItem>
+                                          <SelectItem value="marketing">Marketing</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </div>
