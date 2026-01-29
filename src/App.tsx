@@ -57,7 +57,7 @@ const App = () => (
             <Route path="/wallets" element={<ProtectedPage allowedRoles={['super_agent']}><WalletsFunds /></ProtectedPage>} />
             <Route path="/reports" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant', 'marketing']}><Reports /></ProtectedPage>} />
             <Route path="/audit-logs" element={<ProtectedPage allowedRoles={['super_agent']}><AuditLogs /></ProtectedPage>} />
-            <Route path="/settings" element={<ProtectedPage allowedRoles={['super_agent']}><Settings /></ProtectedPage>} />
+            <Route path="/settings" element={<ProtectedPage><Settings /></ProtectedPage>} />
             <Route path="/sales-requests" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><SalesRequests /></ProtectedPage>} />
             <Route path="/escalated-requests" element={<ProtectedPage allowedRoles={['super_agent']}><EscalatedRequests /></ProtectedPage>} />
             <Route path="/agents" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><AgentsManagement /></ProtectedPage>} />
