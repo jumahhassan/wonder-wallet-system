@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, DollarSign, Percent, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { User, DollarSign, Percent, RefreshCw, Upload, Loader2 } from 'lucide-react';
 import { CurrencyCode, TransactionType, CURRENCY_SYMBOLS, TRANSACTION_TYPE_LABELS } from '@/types/database';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ExchangeRate {
   id: string;
@@ -27,16 +29,50 @@ interface CommissionSetting {
   volume_tier_2_bonus: number | null;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  photo_url: string | null;
+}
+
 export default function Settings() {
   const { toast } = useToast();
+  const { user, role } = useAuth();
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [commissionSettings, setCommissionSettings] = useState<CommissionSetting[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    phone: '',
+  });
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+    fetchProfile();
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setProfile(data as UserProfile);
+      setProfileForm({
+        full_name: data.full_name || '',
+        phone: data.phone || '',
+      });
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -106,24 +142,202 @@ export default function Settings() {
     setSaving(false);
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'File size must be less than 5MB', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Error', description: 'Please upload an image file', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(filePath);
+
+      // Update profile with new photo URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ photo_url: urlData.publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast({ title: 'Success', description: 'Profile photo updated' });
+      fetchProfile();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({ title: 'Error', description: error.message || 'Failed to upload photo', variant: 'destructive' });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+
+    // Validate inputs
+    if (profileForm.full_name.trim().length === 0) {
+      toast({ title: 'Error', description: 'Name cannot be empty', variant: 'destructive' });
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: profileForm.full_name.trim(),
+        phone: profileForm.phone.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update profile', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Profile updated' });
+      fetchProfile();
+    }
+    setSaving(false);
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const isAdmin = role === 'super_agent';
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-display font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage system configuration</p>
+        <p className="text-muted-foreground">Manage your profile and system configuration</p>
       </div>
 
-      <Tabs defaultValue="exchange" className="space-y-6">
+      <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="exchange" className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Exchange Rates
+          <TabsTrigger value="profile" className="gap-2">
+            <User className="w-4 h-4" />
+            My Profile
           </TabsTrigger>
-          <TabsTrigger value="commission" className="gap-2">
-            <Percent className="w-4 h-4" />
-            Commission Settings
-          </TabsTrigger>
+          {isAdmin && (
+            <>
+              <TabsTrigger value="exchange" className="gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Exchange Rates
+              </TabsTrigger>
+              <TabsTrigger value="commission" className="gap-2">
+                <Percent className="w-4 h-4" />
+                Commission Settings
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
+
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                My Profile
+              </CardTitle>
+              <CardDescription>
+                Update your personal information and profile photo
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Profile Photo Section */}
+              <div className="flex items-center gap-6">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={profile?.photo_url || undefined} alt={profile?.full_name || 'Profile'} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2">
+                  <Label htmlFor="photo-upload" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
+                      {uploadingPhoto ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                      <span>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</span>
+                    </div>
+                  </Label>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max file size: 5MB. Supported formats: JPG, PNG, GIF
+                  </p>
+                </div>
+              </div>
+
+              {/* Profile Form */}
+              <div className="grid gap-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile?.email || ''}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={profileForm.full_name}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, full_name: e.target.value }))}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+211 XXX XXX XXX"
+                  />
+                </div>
+                <Button onClick={handleUpdateProfile} disabled={saving} className="w-fit">
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="exchange">
           <Card>
