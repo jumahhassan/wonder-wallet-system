@@ -58,22 +58,33 @@ serve(async (req) => {
       );
     }
 
-    // Check if requesting user is a super_agent
+    // Check if requesting user has permission to create users
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", requestingUser.id)
       .single();
 
-    if (roleError || roleData?.role !== "super_agent") {
+    const requestingUserRole = roleData?.role;
+    const canCreateUsers = requestingUserRole === "super_agent" || requestingUserRole === "hr_finance";
+
+    if (roleError || !canCreateUsers) {
       return new Response(
-        JSON.stringify({ error: "Only Super Agents can create users" }),
+        JSON.stringify({ error: "Only Super Agents and HR/Finance can create users" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse the request body
+    // Parse the request body first to validate role restriction
     const { email, password, fullName, phone, role, photoUrl, nationalIdUrl }: CreateUserRequest = await req.json();
+
+    // HR/Finance cannot create super_agent users
+    if (requestingUserRole === "hr_finance" && role === "super_agent") {
+      return new Response(
+        JSON.stringify({ error: "HR/Finance cannot create Super Agent users. Only Super Agents can create other Super Agents." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Validate input
     if (!email || !password || !fullName || !role) {
@@ -83,7 +94,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Creating user:", { email, fullName, role, hasPhoto: !!photoUrl, hasNationalId: !!nationalIdUrl });
+    console.log("Creating user:", { email, fullName, role, createdBy: requestingUserRole, hasPhoto: !!photoUrl, hasNationalId: !!nationalIdUrl });
 
     // Create the new user using admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
