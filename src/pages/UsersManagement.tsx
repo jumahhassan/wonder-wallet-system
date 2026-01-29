@@ -55,7 +55,7 @@ const createUserSchema = z.object({
 
 export default function UsersManagement() {
   const { toast } = useToast();
-  const { session } = useAuth();
+  const { session, role: currentUserRole } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -354,14 +354,19 @@ export default function UsersManagement() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                  <SelectContent>
+                    {currentUserRole === 'super_agent' && (
+                      <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                    )}
                     <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
                     <SelectItem value="sales_agent">Sales Agent</SelectItem>
                     <SelectItem value="hr_finance">HR/Finance</SelectItem>
                     <SelectItem value="marketing">Marketing</SelectItem>
                   </SelectContent>
                 </Select>
+                {currentUserRole === 'hr_finance' && (
+                  <p className="text-xs text-muted-foreground">Note: Only Super Agents can create other Super Agent users.</p>
+                )}
               </div>
 
               {/* Photo Upload */}
@@ -544,13 +549,18 @@ export default function UsersManagement() {
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                                          {currentUserRole === 'super_agent' && (
+                                            <SelectItem value="super_agent">Super Agent (Admin)</SelectItem>
+                                          )}
                                           <SelectItem value="sales_assistant">Sales Assistant</SelectItem>
                                           <SelectItem value="sales_agent">Sales Agent</SelectItem>
                                           <SelectItem value="hr_finance">HR/Finance</SelectItem>
                                           <SelectItem value="marketing">Marketing</SelectItem>
                                         </SelectContent>
                                       </Select>
+                                      {currentUserRole === 'hr_finance' && (
+                                        <p className="text-xs text-muted-foreground">Note: Only Super Agents can assign the Super Agent role.</p>
+                                      )}
                                     </div>
                                   </div>
                                   <DialogFooter>
