@@ -53,20 +53,21 @@ export default function NewSaleRequest() {
     serviceType: '' as TransactionType | '',
     amount: '',
     currency: 'SSP' as CurrencyCode, // Default to SSP for airtime
-    destination: '',
+    recipientName: '',
+    recipientPhone: '',
     notes: '',
     mobileOperator: '' as MobileOperator | '',
   });
 
   // Real-time phone validation when operator is selected
   useEffect(() => {
-    if (formData.serviceType === 'airtime' && formData.mobileOperator && formData.clientPhone) {
-      const validation = validatePhonePrefixRealtime(formData.clientPhone, formData.mobileOperator as MobileOperator);
+    if (formData.serviceType === 'airtime' && formData.mobileOperator && formData.recipientPhone) {
+      const validation = validatePhonePrefixRealtime(formData.recipientPhone, formData.mobileOperator as MobileOperator);
       setPhoneWarning(validation.warning || null);
     } else {
       setPhoneWarning(null);
     }
-  }, [formData.clientPhone, formData.mobileOperator, formData.serviceType]);
+  }, [formData.recipientPhone, formData.mobileOperator, formData.serviceType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,14 +83,19 @@ export default function NewSaleRequest() {
       return;
     }
 
-    if (!formData.clientPhone.trim()) {
-      toast.error('Please enter client phone number');
+    if (!formData.recipientPhone.trim()) {
+      toast.error('Please enter recipient phone number');
+      return;
+    }
+
+    if (!formData.recipientName.trim()) {
+      toast.error('Please enter recipient name');
       return;
     }
 
     // Validate phone number format for airtime
     if (formData.serviceType === 'airtime' && formData.mobileOperator) {
-      if (!isPhoneComplete(formData.clientPhone, formData.mobileOperator as MobileOperator)) {
+      if (!isPhoneComplete(formData.recipientPhone, formData.mobileOperator as MobileOperator)) {
         const { local, international } = OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator];
         toast.error(`Please enter a valid ${MOBILE_OPERATORS.find(o => o.value === formData.mobileOperator)?.label} number (${local}XXXXXXX or ${international}XXXXXXX)`);
         return;
@@ -115,10 +121,11 @@ export default function NewSaleRequest() {
           transaction_type: formData.serviceType,
           amount: amount,
           currency: formData.currency,
-          recipient_name: formData.clientName.trim() || undefined,
-          recipient_phone: formData.clientPhone.trim(),
+          recipient_name: formData.recipientName.trim() || formData.clientName.trim() || undefined,
+          recipient_phone: formData.recipientPhone.trim() || formData.clientPhone.trim(),
           metadata: {
-            destination: formData.destination.trim() || undefined,
+            client_name: formData.clientName.trim() || undefined,
+            client_phone: formData.clientPhone.trim() || undefined,
             notes: formData.notes.trim() || undefined,
             mobile_operator: formData.serviceType === 'airtime' ? formData.mobileOperator : undefined,
           },
@@ -147,16 +154,16 @@ export default function NewSaleRequest() {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Reset phone number and operator when service type changes
+      // Reset recipient phone and operator when service type changes
       if (field === 'serviceType') {
-        newData.clientPhone = '';
+        newData.recipientPhone = '';
         newData.mobileOperator = '';
         setPhoneWarning(null);
       }
       
-      // Reset phone number when operator changes
+      // Reset recipient phone when operator changes
       if (field === 'mobileOperator') {
-        newData.clientPhone = '';
+        newData.recipientPhone = '';
         setPhoneWarning(null);
       }
       
@@ -164,7 +171,7 @@ export default function NewSaleRequest() {
     });
   };
 
-  const handlePhoneChange = (value: string) => {
+  const handleRecipientPhoneChange = (value: string) => {
     // Only allow digits, +, and spaces
     const cleanValue = value.replace(/[^\d+\s-]/g, '');
     
@@ -179,7 +186,7 @@ export default function NewSaleRequest() {
       }
     }
     
-    setFormData(prev => ({ ...prev, clientPhone: cleanValue }));
+    setFormData(prev => ({ ...prev, recipientPhone: cleanValue }));
   };
 
   return (
@@ -251,10 +258,10 @@ export default function NewSaleRequest() {
               </div>
             )}
 
-            {/* Client Info */}
+            {/* Client Info (optional) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="clientName">Client Name</Label>
+                <Label htmlFor="clientName">Client Name (optional)</Label>
                 <Input
                   id="clientName"
                   placeholder="John Doe"
@@ -263,16 +270,39 @@ export default function NewSaleRequest() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientPhone">Client Phone *</Label>
+                <Label htmlFor="clientPhone">Client Phone (optional)</Label>
                 <Input
                   id="clientPhone"
+                  placeholder="+211 XXX XXX XXX"
+                  value={formData.clientPhone}
+                  onChange={(e) => handleChange('clientPhone', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Recipient Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="recipientName">Recipient Name *</Label>
+                <Input
+                  id="recipientName"
+                  placeholder="Recipient full name"
+                  value={formData.recipientName}
+                  onChange={(e) => handleChange('recipientName', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recipientPhone">Recipient Phone *</Label>
+                <Input
+                  id="recipientPhone"
                   placeholder={
                     formData.serviceType === 'airtime' && formData.mobileOperator
                       ? `${OPERATOR_PREFIXES[formData.mobileOperator as MobileOperator].local}XXXXXXX`
                       : '+211 XXX XXX XXX'
                   }
-                  value={formData.clientPhone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  value={formData.recipientPhone}
+                  onChange={(e) => handleRecipientPhoneChange(e.target.value)}
                   disabled={formData.serviceType === 'airtime' && !formData.mobileOperator}
                   required
                   className={phoneWarning ? 'border-destructive' : ''}
@@ -325,19 +355,6 @@ export default function NewSaleRequest() {
                 </Select>
               </div>
             </div>
-
-            {/* Destination (for remittance) */}
-            {(formData.serviceType === 'mpesa_kenya' || formData.serviceType === 'uganda_mobile_money') && (
-              <div className="space-y-2">
-                <Label htmlFor="destination">Destination Phone/Account</Label>
-                <Input
-                  id="destination"
-                  placeholder="Recipient phone number or account"
-                  value={formData.destination}
-                  onChange={(e) => handleChange('destination', e.target.value)}
-                />
-              </div>
-            )}
 
             {/* Notes */}
             <div className="space-y-2">
