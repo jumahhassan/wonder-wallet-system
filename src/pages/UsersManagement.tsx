@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -278,6 +279,13 @@ export default function UsersManagement() {
     }
   };
 
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email.substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -511,7 +519,17 @@ export default function UsersManagement() {
                     <TableBody>
                       {pagination.paginatedData.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-9 w-9">
+                                <AvatarImage src={user.photo_url || undefined} alt={user.full_name || 'User'} />
+                                <AvatarFallback>
+                                  {getInitials(user.full_name, user.email)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{user.full_name || 'N/A'}</span>
+                            </div>
+                          </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>{user.phone || 'N/A'}</TableCell>
                           <TableCell>
