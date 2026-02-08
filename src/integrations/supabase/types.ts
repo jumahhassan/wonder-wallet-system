@@ -317,6 +317,54 @@ export type Database = {
         }
         Relationships: []
       }
+      float_requests: {
+        Row: {
+          agent_id: string
+          amount: number
+          created_at: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          id: string
+          notes: string | null
+          reason: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          agent_id: string
+          amount: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          notes?: string | null
+          reason: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          urgency: string
+        }
+        Update: {
+          agent_id?: string
+          amount?: number
+          created_at?: string
+          currency?: Database["public"]["Enums"]["currency_code"]
+          id?: string
+          notes?: string | null
+          reason?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
       payroll_records: {
         Row: {
           approved_by: string | null
