@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wallet, TrendingUp, Clock, DollarSign, Plus } from 'lucide-react';
+import { Wallet, TrendingUp, Clock, DollarSign, Plus, Banknote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Transaction, Wallet as WalletType, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
 import CommissionTierCard from '@/components/dashboard/CommissionTierCard';
@@ -15,6 +15,7 @@ interface Stats {
   salesToday: number;
   commissionEarned: number;
   pendingRequests: number;
+  pendingFloatRequests: number;
   cumulativeAirtimeVolumeSSP: number;
 }
 
@@ -27,6 +28,7 @@ export default function SalesAgentDashboard() {
     salesToday: 0,
     commissionEarned: 0,
     pendingRequests: 0,
+    pendingFloatRequests: 0,
     cumulativeAirtimeVolumeSSP: 0,
   });
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -99,12 +101,20 @@ export default function SalesAgentDashboard() {
       .order('created_at', { ascending: false })
       .limit(5);
     
+    // Fetch pending float requests
+    const { data: pendingFloatReqs } = await supabase
+      .from('float_requests')
+      .select('id')
+      .eq('agent_id', user.id)
+      .eq('status', 'pending');
+    
     setStats({
       availableFloatUSD: floatUSD,
       availableFloatSSP: floatSSP,
       salesToday: todaySales?.length || 0,
       commissionEarned: totalCommission,
       pendingRequests: pendingTx?.length || 0,
+      pendingFloatRequests: pendingFloatReqs?.length || 0,
       cumulativeAirtimeVolumeSSP: cumulativeAirtimeSSP,
     });
     
@@ -117,7 +127,8 @@ export default function SalesAgentDashboard() {
     { title: 'Float (SSP)', value: `SSP ${stats.availableFloatSSP.toLocaleString()}`, icon: <Wallet className="w-5 h-5" />, color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Sales Made Today', value: stats.salesToday, icon: <TrendingUp className="w-5 h-5" />, color: 'text-success', bg: 'bg-success/10' },
     { title: 'Commission Earned', value: `$${stats.commissionEarned.toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: 'text-info', bg: 'bg-info/10' },
-    { title: 'Pending Requests', value: stats.pendingRequests, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
+    { title: 'Pending Sales', value: stats.pendingRequests, icon: <Clock className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10' },
+    { title: 'Float Requests', value: stats.pendingFloatRequests, icon: <Banknote className="w-5 h-5" />, color: 'text-warning', bg: 'bg-warning/10', onClick: () => navigate('/float-requests') },
   ];
 
   return (
@@ -127,16 +138,26 @@ export default function SalesAgentDashboard() {
           <h1 className="text-2xl md:text-3xl font-display font-bold">Agent Dashboard</h1>
           <p className="text-sm md:text-base text-muted-foreground">Your sales performance and activity</p>
         </div>
-        <Button onClick={() => navigate('/new-sale')} className="gap-2 w-full sm:w-auto">
-          <Plus className="w-4 h-4" />
-          New Sale Request
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button onClick={() => navigate('/float-requests')} variant="outline" className="gap-2 flex-1 sm:flex-none">
+            <Banknote className="w-4 h-4" />
+            Request Float
+          </Button>
+          <Button onClick={() => navigate('/new-sale')} className="gap-2 flex-1 sm:flex-none">
+            <Plus className="w-4 h-4" />
+            New Sale
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {statCards.map((stat, i) => (
-          <Card key={i} className="border-border/50 hover:shadow-lg transition-shadow">
+          <Card 
+            key={i} 
+            className={`border-border/50 hover:shadow-lg transition-shadow ${stat.onClick ? 'cursor-pointer' : ''}`}
+            onClick={stat.onClick}
+          >
             <CardContent className="p-3 md:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="min-w-0">

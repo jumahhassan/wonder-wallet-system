@@ -22,6 +22,8 @@ import NewSaleRequest from "./pages/NewSaleRequest";
 import MyTransactions from "./pages/MyTransactions";
 import MyCommission from "./pages/MyCommission";
 import MyClients from "./pages/MyClients";
+import FloatRequests from "./pages/FloatRequests";
+import FloatRequestsApproval from "./pages/FloatRequestsApproval";
 import SimCardManagement from "./pages/SimCardManagement";
 // HR/Finance pages
 import HREmployees from "./pages/hr/Employees";
@@ -62,10 +64,12 @@ const App = () => (
             <Route path="/escalated-requests" element={<ProtectedPage allowedRoles={['super_agent']}><EscalatedRequests /></ProtectedPage>} />
             <Route path="/agents" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><AgentsManagement /></ProtectedPage>} />
             <Route path="/sim-cards" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><SimCardManagement /></ProtectedPage>} />
+            <Route path="/float-requests-approval" element={<ProtectedPage allowedRoles={['super_agent', 'sales_assistant']}><FloatRequestsApproval /></ProtectedPage>} />
             <Route path="/new-sale" element={<ProtectedPage allowedRoles={['sales_agent']}><NewSaleRequest /></ProtectedPage>} />
             <Route path="/my-transactions" element={<ProtectedPage allowedRoles={['sales_agent']}><MyTransactions /></ProtectedPage>} />
             <Route path="/my-commission" element={<ProtectedPage allowedRoles={['sales_agent']}><MyCommission /></ProtectedPage>} />
             <Route path="/my-clients" element={<ProtectedPage allowedRoles={['sales_agent']}><MyClients /></ProtectedPage>} />
+            <Route path="/float-requests" element={<ProtectedPage allowedRoles={['sales_agent']}><FloatRequests /></ProtectedPage>} />
             {/* HR/Finance routes */}
             <Route path="/hr/employees" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HREmployees /></ProtectedPage>} />
             <Route path="/hr/payroll" element={<ProtectedPage allowedRoles={['hr_finance', 'super_agent']}><HRPayroll /></ProtectedPage>} />

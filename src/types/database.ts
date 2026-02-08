@@ -8,12 +8,16 @@ export type ExpenseType = 'rent' | 'water' | 'electricity' | 'internet' | 'suppl
 export type PayrollStatus = 'pending' | 'approved' | 'paid' | 'cancelled';
 export type EquipmentType = 'phone' | 'tablet' | 'laptop' | 'uniform' | 'id_card' | 'other';
 export type AdvanceStatus = 'pending' | 'approved' | 'active' | 'repaid' | 'rejected';
+export type FloatRequestStatus = 'pending' | 'approved' | 'rejected';
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Profile {
   id: string;
   email: string;
   full_name: string | null;
   phone: string | null;
+  photo_url: string | null;
+  national_id_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -190,6 +194,22 @@ export interface SalaryAdvance {
   updated_at: string;
 }
 
+export interface FloatRequest {
+  id: string;
+  agent_id: string;
+  amount: number;
+  currency: CurrencyCode;
+  reason: string;
+  urgency: UrgencyLevel;
+  status: FloatRequestStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   airtime: 'Airtime',
   mtn_momo: 'MTN MoMo',
@@ -255,4 +275,17 @@ export const EQUIPMENT_TYPE_LABELS: Record<EquipmentType, string> = {
   uniform: 'Uniform',
   id_card: 'ID Card',
   other: 'Other',
+};
+
+export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  critical: 'Critical',
+};
+
+export const FLOAT_REQUEST_STATUS_LABELS: Record<FloatRequestStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
 };

@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   Menu,
   X,
+  Banknote,
   CreditCard,
   DollarSign,
   Receipt,
@@ -64,6 +65,7 @@ const navItems: NavItem[] = [
   // Sales Assistant menu
   { label: 'Sales Requests', href: '/sales-requests', icon: <CheckSquare className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Agents', href: '/agents', icon: <Users className="w-5 h-5" />, roles: ['sales_assistant'] },
+  { label: 'Float Requests', href: '/float-requests-approval', icon: <Banknote className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'SIM Cards', href: '/sim-cards', icon: <CreditCard className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Transactions', href: '/transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_assistant'] },
   { label: 'Reports', href: '/reports', icon: <FileText className="w-5 h-5" />, roles: ['sales_assistant'] },
@@ -72,6 +74,7 @@ const navItems: NavItem[] = [
   { label: 'My Transactions', href: '/my-transactions', icon: <ArrowLeftRight className="w-5 h-5" />, roles: ['sales_agent'] },
   { label: 'My Commission', href: '/my-commission', icon: <Wallet className="w-5 h-5" />, roles: ['sales_agent'] },
   { label: 'My Clients', href: '/my-clients', icon: <Users className="w-5 h-5" />, roles: ['sales_agent'] },
+  { label: 'Float Requests', href: '/float-requests', icon: <Banknote className="w-5 h-5" />, roles: ['sales_agent'] },
   // HR/Finance menu
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['hr_finance'] },
   { label: 'Employees', href: '/hr/employees', icon: <Users className="w-5 h-5" />, roles: ['hr_finance'] },

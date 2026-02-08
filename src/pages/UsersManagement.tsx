@@ -42,8 +42,6 @@ import { cn } from '@/lib/utils';
 
 interface UserWithRole extends Profile {
   role: AppRole;
-  photo_url?: string | null;
-  national_id_url?: string | null;
 }
 
 const createUserSchema = z.object({
