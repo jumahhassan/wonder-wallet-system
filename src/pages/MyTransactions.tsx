@@ -167,8 +167,8 @@ export default function MyTransactions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">My Transactions</h1>
-        <p className="text-muted-foreground">View all your submitted transaction requests</p>
+        <h1 className="text-2xl md:text-3xl font-bold">My Transactions</h1>
+        <p className="text-sm md:text-base text-muted-foreground">View all your submitted transaction requests</p>
       </div>
 
       {/* Stats Cards */}

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Loader2, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { CurrencyCode, CURRENCY_SYMBOLS, Profile } from '@/types/database';
@@ -313,92 +314,95 @@ export default function FloatRequestsApproval() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Agent</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Urgency</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          {activeTab === 'pending' && <TableHead>Actions</TableHead>}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pagination.paginatedData.map((request) => (
-                          <TableRow key={request.id} className={request.urgency === 'critical' ? 'bg-destructive/5' : ''}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={request.agent?.photo_url || undefined} />
-                                  <AvatarFallback>
-                                    {getInitials(request.agent?.full_name || null, request.agent?.email)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-sm">{request.agent?.full_name || 'Unknown'}</p>
-                                  <p className="text-xs text-muted-foreground">{request.agent?.email}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-semibold">
-                              {CURRENCY_SYMBOLS[request.currency]}{Number(request.amount).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${URGENCY_COLORS[request.urgency]}`}>
-                                {URGENCY_LABELS[request.urgency]}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px]">
-                              <p className="truncate" title={request.reason}>{request.reason}</p>
-                              {request.notes && (
-                                <p className="text-xs text-muted-foreground truncate" title={request.notes}>
-                                  Note: {request.notes}
-                                </p>
-                              )}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-sm">
-                              {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={STATUS_CONFIG[request.status].variant} className="gap-1">
-                                {STATUS_CONFIG[request.status].icon}
-                                {STATUS_CONFIG[request.status].label}
-                              </Badge>
-                              {request.status === 'rejected' && request.rejection_reason && (
-                                <p className="text-xs text-destructive mt-1 max-w-[150px] truncate" title={request.rejection_reason}>
-                                  {request.rejection_reason}
-                                </p>
-                              )}
-                            </TableCell>
-                            {activeTab === 'pending' && (
+                  <ScrollArea className="w-full">
+                    <div className="min-w-[900px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Agent</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Urgency</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                            {activeTab === 'pending' && <TableHead>Actions</TableHead>}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pagination.paginatedData.map((request) => (
+                            <TableRow key={request.id} className={request.urgency === 'critical' ? 'bg-destructive/5' : ''}>
                               <TableCell>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => handleApprove(request)}
-                                    disabled={processing}
-                                  >
-                                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Approve'}
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="destructive"
-                                    onClick={() => openRejectDialog(request)}
-                                    disabled={processing}
-                                  >
-                                    Reject
-                                  </Button>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={request.agent?.photo_url || undefined} />
+                                    <AvatarFallback>
+                                      {getInitials(request.agent?.full_name || null, request.agent?.email)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium text-sm">{request.agent?.full_name || 'Unknown'}</p>
+                                    <p className="text-xs text-muted-foreground">{request.agent?.email}</p>
+                                  </div>
                                 </div>
                               </TableCell>
-                            )}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                              <TableCell className="font-semibold whitespace-nowrap">
+                                {CURRENCY_SYMBOLS[request.currency]}{Number(request.amount).toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${URGENCY_COLORS[request.urgency]}`}>
+                                  {URGENCY_LABELS[request.urgency]}
+                                </span>
+                              </TableCell>
+                              <TableCell className="max-w-[200px]">
+                                <p className="truncate" title={request.reason}>{request.reason}</p>
+                                {request.notes && (
+                                  <p className="text-xs text-muted-foreground truncate" title={request.notes}>
+                                    Note: {request.notes}
+                                  </p>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={STATUS_CONFIG[request.status].variant} className="gap-1">
+                                  {STATUS_CONFIG[request.status].icon}
+                                  {STATUS_CONFIG[request.status].label}
+                                </Badge>
+                                {request.status === 'rejected' && request.rejection_reason && (
+                                  <p className="text-xs text-destructive mt-1 max-w-[150px] truncate" title={request.rejection_reason}>
+                                    {request.rejection_reason}
+                                  </p>
+                                )}
+                              </TableCell>
+                              {activeTab === 'pending' && (
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleApprove(request)}
+                                      disabled={processing}
+                                    >
+                                      {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Approve'}
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="destructive"
+                                      onClick={() => openRejectDialog(request)}
+                                      disabled={processing}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
                   <TablePagination
                     currentPage={pagination.currentPage}
                     totalPages={pagination.totalPages}

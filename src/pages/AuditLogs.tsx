@@ -114,12 +114,12 @@ export default function AuditLogs() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold">Audit Logs</h1>
-          <p className="text-muted-foreground">System activity and change history</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold">Audit Logs</h1>
+          <p className="text-sm md:text-base text-muted-foreground">System activity and change history</p>
         </div>
-        <Button onClick={handleExport} variant="outline" className="gap-2">
+        <Button onClick={handleExport} variant="outline" className="gap-2 w-full sm:w-auto">
           <Download className="w-4 h-4" />
           Export CSV
         </Button>

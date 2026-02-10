@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Loader2, Plus, Wallet, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { CurrencyCode, CURRENCY_SYMBOLS } from '@/types/database';
@@ -382,55 +383,58 @@ export default function FloatRequests() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Urgency</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagination.paginatedData.map((request) => (
-                      <TableRow key={request.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {format(new Date(request.created_at), 'MMM d, yyyy')}
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(request.created_at), 'h:mm a')}
-                          </p>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          {CURRENCY_SYMBOLS[request.currency]}{Number(request.amount).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${URGENCY_COLORS[request.urgency]}`}>
-                            {URGENCY_LABELS[request.urgency]}
-                          </span>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={request.reason}>
-                          {request.reason}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <Badge variant={STATUS_CONFIG[request.status].variant} className="w-fit gap-1">
-                              {STATUS_CONFIG[request.status].icon}
-                              {STATUS_CONFIG[request.status].label}
-                            </Badge>
-                            {request.status === 'rejected' && request.rejection_reason && (
-                              <p className="text-xs text-destructive" title={request.rejection_reason}>
-                                {request.rejection_reason.slice(0, 30)}...
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
+              <ScrollArea className="w-full">
+                <div className="min-w-[700px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Urgency</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {pagination.paginatedData.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(request.created_at), 'MMM d, yyyy')}
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(request.created_at), 'h:mm a')}
+                            </p>
+                          </TableCell>
+                          <TableCell className="font-semibold whitespace-nowrap">
+                            {CURRENCY_SYMBOLS[request.currency]}{Number(request.amount).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${URGENCY_COLORS[request.urgency]}`}>
+                              {URGENCY_LABELS[request.urgency]}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate" title={request.reason}>
+                            {request.reason}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant={STATUS_CONFIG[request.status].variant} className="w-fit gap-1">
+                                {STATUS_CONFIG[request.status].icon}
+                                {STATUS_CONFIG[request.status].label}
+                              </Badge>
+                              {request.status === 'rejected' && request.rejection_reason && (
+                                <p className="text-xs text-destructive" title={request.rejection_reason}>
+                                  {request.rejection_reason.slice(0, 30)}...
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
               <TablePagination
                 currentPage={pagination.currentPage}
                 totalPages={pagination.totalPages}
