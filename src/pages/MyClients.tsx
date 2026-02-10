@@ -110,8 +110,8 @@ export default function MyClients() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">My Clients</h1>
-        <p className="text-muted-foreground">Manage and view your client history</p>
+        <h1 className="text-2xl md:text-3xl font-bold">My Clients</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Manage and view your client history</p>
       </div>
 
       {/* Summary Cards */}

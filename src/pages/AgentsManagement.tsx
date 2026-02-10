@@ -226,8 +226,8 @@ export default function AgentsManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Agent Management</h1>
-        <p className="text-muted-foreground">Manage sales agents and their float balances</p>
+        <h1 className="text-2xl md:text-3xl font-bold">Agent Management</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Manage sales agents and their float balances</p>
       </div>
 
       {/* Summary Cards */}

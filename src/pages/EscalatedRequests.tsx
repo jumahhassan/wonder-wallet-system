@@ -242,15 +242,15 @@ export default function EscalatedRequests() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <AlertTriangle className="w-8 h-8 text-orange-500" />
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <AlertTriangle className="w-6 h-6 md:w-8 md:h-8 text-orange-500" />
             Escalated Requests
           </h1>
-          <p className="text-muted-foreground">Review requests escalated by Sales Assistants</p>
+          <p className="text-sm md:text-base text-muted-foreground">Review requests escalated by Sales Assistants</p>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-2 border-orange-500 text-orange-500">
+        <Badge variant="outline" className="text-base md:text-lg px-3 md:px-4 py-1.5 md:py-2 border-orange-500 text-orange-500 self-start sm:self-auto">
           {requests.length} Escalated
         </Badge>
       </div>
