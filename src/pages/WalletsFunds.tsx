@@ -60,6 +60,7 @@ export default function WalletsFunds() {
         const profile = profiles.find(p => p.id === wallet.user_id);
         return {
           ...wallet,
+          network: wallet.network as WalletType['network'],
           user_email: profile?.email,
           user_name: profile?.full_name || undefined
         };
