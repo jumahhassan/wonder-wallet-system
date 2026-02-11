@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, CheckCircle, DollarSign, Users, Wallet, Eye, CreditCard, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Transaction, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
+import { Transaction, Wallet as WalletType, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
 import { format } from 'date-fns';
+import NetworkWalletCard from '@/components/dashboard/NetworkWalletCard';
 
 interface Stats {
   pendingRequests: number;
@@ -32,6 +33,7 @@ export default function SalesAssistantDashboard() {
     simSoldToday: 0,
   });
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
+  const [allWallets, setAllWallets] = useState<WalletType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,6 +83,10 @@ export default function SalesAssistantDashboard() {
     
     const totalFloatUSD = floats?.filter(f => f.currency === 'USD').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
     const totalFloatSSP = floats?.filter(f => f.currency === 'SSP').reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+    
+    // Fetch all wallets for network breakdown
+    const { data: walletsData } = await supabase.from('wallets').select('*');
+    setAllWallets((walletsData as WalletType[])?.map(w => ({ ...w, network: w.network as WalletType['network'] })) || []);
     
     // Fetch SIM card stats for today
     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -164,6 +170,9 @@ export default function SalesAssistantDashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Network SSP Breakdown */}
+      <NetworkWalletCard wallets={allWallets} title="Total SSP Airtime by Network" />
 
       {/* Pending Requests Preview */}
       <Card>

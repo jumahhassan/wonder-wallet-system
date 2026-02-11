@@ -29,14 +29,23 @@ export interface UserRole {
   created_at: string;
 }
 
+export type NetworkType = 'mtn' | 'zain' | 'digitel';
+
 export interface Wallet {
   id: string;
   user_id: string;
   currency: CurrencyCode;
   balance: number;
+  network: NetworkType | null;
   created_at: string;
   updated_at: string;
 }
+
+export const NETWORK_LABELS: Record<NetworkType, string> = {
+  mtn: 'MTN',
+  zain: 'Zain',
+  digitel: 'Digitel',
+};
 
 export interface ExchangeRate {
   id: string;

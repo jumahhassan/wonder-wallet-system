@@ -8,6 +8,7 @@ import { Wallet, TrendingUp, Clock, DollarSign, Plus, Banknote } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import { Transaction, Wallet as WalletType, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
 import CommissionTierCard from '@/components/dashboard/CommissionTierCard';
+import NetworkWalletCard from '@/components/dashboard/NetworkWalletCard';
 
 interface Stats {
   availableFloatUSD: number;
@@ -62,7 +63,7 @@ export default function SalesAgentDashboard() {
     
     const floatUSD = userWallets?.filter(w => w.currency === 'USD').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     const floatSSP = userWallets?.filter(w => w.currency === 'SSP').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
-    setWallets((userWallets as WalletType[]) || []);
+    setWallets((userWallets as WalletType[])?.map(w => ({ ...w, network: w.network as WalletType['network'] })) || []);
     
     // Fetch today's sales
     const today = new Date().toISOString().split('T')[0];
@@ -171,10 +172,13 @@ export default function SalesAgentDashboard() {
         ))}
       </div>
 
-      {/* Commission Tier & Wallet Balances */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      {/* Commission Tier, Network Wallets & Wallet Balances */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Commission Tier Card */}
         <CommissionTierCard cumulativeVolumeSSP={stats.cumulativeAirtimeVolumeSSP} />
+        
+        {/* Network SSP Wallets */}
+        <NetworkWalletCard wallets={wallets} />
         
         {/* Wallet Balances */}
         <Card>
@@ -183,7 +187,7 @@ export default function SalesAgentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
-              {wallets.map((wallet) => (
+              {wallets.filter(w => !w.network).map((wallet) => (
                 <div key={wallet.id} className="p-3 md:p-4 rounded-lg bg-muted/50 text-center">
                   <p className="text-xs md:text-sm text-muted-foreground">{wallet.currency}</p>
                   <p className="text-base md:text-xl font-bold mt-1 truncate">

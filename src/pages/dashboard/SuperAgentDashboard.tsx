@@ -7,7 +7,8 @@ import {
   ArrowUpRight, DollarSign, UserCheck, AlertTriangle 
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Transaction, Profile, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
+import { Transaction, Wallet as WalletType, Profile, TRANSACTION_TYPE_LABELS, CURRENCY_SYMBOLS } from '@/types/database';
+import NetworkWalletCard from '@/components/dashboard/NetworkWalletCard';
 
 interface Stats {
   companyBalanceUSD: number;
@@ -35,6 +36,7 @@ export default function SuperAgentDashboard() {
   const [escalatedTransactions, setEscalatedTransactions] = useState<Transaction[]>([]);
   const [dailyData, setDailyData] = useState<{ date: string; volume: number }[]>([]);
   const [revenueByService, setRevenueByService] = useState<{ service: string; revenue: number }[]>([]);
+  const [allWallets, setAllWallets] = useState<WalletType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,10 +58,12 @@ export default function SuperAgentDashboard() {
     // Fetch wallets for company balance
     const { data: wallets } = await supabase
       .from('wallets')
-      .select('balance, currency');
+      .select('*');
+    
+    setAllWallets((wallets as WalletType[])?.map(w => ({ ...w, network: w.network as WalletType['network'] })) || []);
     
     const companyBalanceUSD = wallets?.filter(w => w.currency === 'USD').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
-    const companyBalanceSSP = wallets?.filter(w => w.currency === 'SSP').reduce((sum, w) => sum + Number(w.balance), 0) || 0;
+    const companyBalanceSSP = wallets?.filter(w => w.currency === 'SSP' && !w.network).reduce((sum, w) => sum + Number(w.balance), 0) || 0;
     
     // Fetch today's transactions
     const today = new Date().toISOString().split('T')[0];
@@ -173,6 +177,9 @@ export default function SuperAgentDashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Network SSP Breakdown */}
+      <NetworkWalletCard wallets={allWallets} title="Company SSP Airtime by Network" />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
